@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
   const handleScan = () => {
@@ -18,7 +19,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <PageHeader
         title="Welcome Back, Jane!"
-        description="Here's your academic snapshot for today."
+        description="Your academic snapshot for today."
       />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -63,7 +64,10 @@ export default function DashboardPage() {
       <div>
         <Card className="bg-primary/10 border-primary/20">
           <CardHeader>
-            <CardTitle className="font-headline text-xl">Mark Your Attendance</CardTitle>
+            <div className="flex items-center gap-2">
+                <CardTitle className="font-headline text-xl">Mark Your Attendance</CardTitle>
+                <Badge variant="destructive" className="h-6 w-6 justify-center">N</Badge>
+            </div>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="p-4 bg-background rounded-lg shadow-inner">
