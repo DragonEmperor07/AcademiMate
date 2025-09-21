@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin } from "lucide-react";
-import { getClasses, subscribe } from "@/lib/class-data";
+import { getClasses, subscribe, updateClassStatuses } from "@/lib/class-data";
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -24,10 +24,20 @@ export default function ClassesPage() {
   const [classes, setClasses] = useState(getClasses());
 
   useEffect(() => {
+    // Initial status update on mount
+    updateClassStatuses();
+    
     const unsubscribe = subscribe(() => {
       setClasses([...getClasses()]);
     });
-    return () => unsubscribe();
+
+    // Set up interval to update statuses periodically
+    const intervalId = setInterval(updateClassStatuses, 60000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(intervalId);
+    };
   }, []);
 
   return (

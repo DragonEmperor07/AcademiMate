@@ -136,9 +136,3 @@ export function updateClassStatuses() {
         notifyListeners();
     }
 }
-
-// Run once on load and then every minute
-if (typeof window !== 'undefined') {
-    updateClassStatuses();
-    setInterval(updateClassStatuses, 60000); 
-}
