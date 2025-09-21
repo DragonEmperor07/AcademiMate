@@ -4,41 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin } from "lucide-react";
-
-const classes = [
-  {
-    time: "09:00 AM - 10:00 AM",
-    subject: "Advanced Mathematics",
-    code: "MTH-302",
-    room: "301",
-    instructor: "Dr. Alan Grant",
-    status: "Completed",
-  },
-  {
-    time: "10:00 AM - 11:00 AM",
-    subject: "Quantum Physics",
-    code: "PHY-410",
-    room: "112",
-    instructor: "Dr. Ellie Sattler",
-    status: "In Progress",
-  },
-  {
-    time: "11:00 AM - 12:00 PM",
-    subject: "Shakespearean Literature",
-    code: "LIT-201",
-    room: "205",
-    instructor: "Dr. Ian Malcolm",
-    status: "Upcoming",
-  },
-    {
-    time: "01:00 PM - 02:00 PM",
-    subject: "Organic Chemistry",
-    code: "CHM-223",
-    room: "Lab 4",
-    instructor: "Dr. Henry Wu",
-    status: "Upcoming",
-  },
-];
+import { classes } from "@/lib/class-data";
 
 const getStatusVariant = (status: string) => {
   switch (status) {

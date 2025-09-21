@@ -24,11 +24,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { getStudents, updateStudentStatus, addStudent, subscribe } from "@/lib/student-data";
+import { getCurrentClass } from "@/lib/class-data";
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState(getStudents());
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentId, setNewStudentId] = useState("");
+  const currentClass = getCurrentClass();
 
   useEffect(() => {
     const unsubscribe = subscribe(() => {
@@ -61,7 +63,7 @@ export default function AttendancePage() {
     updateStudentStatus(studentId, newStatus);
   };
 
-  const classQrCodeValue = "MTH-302-2024-FALL";
+  const classQrCodeValue = currentClass ? `${currentClass.code}-2024-FALL` : 'no-class-active';
 
   return (
     <div className="space-y-8">
@@ -84,27 +86,28 @@ export default function AttendancePage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Class Details</CardTitle>
+             <CardDescription>{currentClass?.subject || 'No class in progress'}</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="font-medium text-muted-foreground">Time:</span>{" "}
-              10:00 AM - 11:00 AM
+              {currentClass?.time || 'N/A'}
             </div>
             <div>
               <span className="font-medium text-muted-foreground">Room:</span>{" "}
-              301
+               {currentClass?.room || 'N/A'}
             </div>
             <div>
               <span className="font-medium text-muted-foreground">
                 Instructor:
               </span>{" "}
-              Dr. Alan Grant
+              {currentClass?.instructor || 'N/A'}
             </div>
             <div>
               <span className="font-medium text-muted-foreground">
                 Subject Code:
               </span>{" "}
-              MTH-302
+              {currentClass?.code || 'N/A'}
             </div>
           </CardContent>
         </Card>

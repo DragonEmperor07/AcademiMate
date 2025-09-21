@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getStudentById, updateStudentStatus, getStudents, subscribe } from "@/lib/student-data";
+import { getNextClass, getCurrentClass } from "@/lib/class-data";
 
 const videoConstraints = {
   facingMode: "environment",
@@ -21,6 +22,8 @@ export default function DashboardPage() {
   const webcamRef = useRef<Webcam>(null);
   const [students, setStudents] = useState(getStudents());
   const [currentTime, setCurrentTime] = useState("");
+  const nextClass = getNextClass();
+  const currentClass = getCurrentClass();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -84,12 +87,18 @@ export default function DashboardPage() {
   }, [loggedInStudent]);
 
   const handleScan = () => {
-    if (loggedInStudent) {
+    if (loggedInStudent && currentClass) {
       updateStudentStatus(loggedInStudent.id, "Present");
       toast({
         title: "Attendance Marked!",
-        description: `You've been successfully marked present for 'Advanced Mathematics'.`,
+        description: `You've been successfully marked present for '${currentClass.subject}'.`,
       });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Scan Failed",
+            description: "No class is currently in progress to mark attendance for.",
+        });
     }
   };
   
@@ -151,8 +160,10 @@ export default function DashboardPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">11:00 AM</div>
-            <p className="text-xs text-muted-foreground">Physics in Room 301</p>
+             <div className="text-2xl font-bold">{nextClass?.time.split(' - ')[0] || 'N/A'}</div>
+            <p className="text-xs text-muted-foreground">
+                {nextClass ? `${nextClass.subject} in Room ${nextClass.room}` : 'No upcoming classes'}
+            </p>
           </CardContent>
         </Card>
         <Card>
