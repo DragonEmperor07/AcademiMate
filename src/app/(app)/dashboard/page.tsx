@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getStudentById, updateStudentStatus, students } from "@/lib/student-data";
+import { getStudentById, updateStudentStatus, students as studentData } from "@/lib/student-data";
 
 const videoConstraints = {
   facingMode: "environment",
@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loggedInStudent, setLoggedInStudent] = useState<any>(null);
   const webcamRef = useRef<Webcam>(null);
+  const [students, setStudents] = useState(studentData);
 
   useEffect(() => {
     const role = localStorage.getItem("loggedInUserRole");
@@ -68,6 +69,8 @@ export default function DashboardPage() {
       updateStudentStatus(loggedInStudent.id, "Present");
       const updatedStudent = getStudentById(loggedInStudent.id);
       setLoggedInStudent(updatedStudent);
+      // This will force a re-render to update the attendance percentage
+      setStudents([...studentData]);
 
       toast({
         title: "Attendance Marked!",
