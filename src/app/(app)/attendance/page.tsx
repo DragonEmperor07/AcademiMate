@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import QRCode from "react-qr-code";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -65,6 +66,8 @@ export default function AttendancePage() {
     );
   };
 
+  const classQrCodeValue = "MTH-302-2024-FALL";
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -113,7 +116,7 @@ export default function AttendancePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-8">
           <Card>
             <CardHeader>
               <CardTitle>Student List</CardTitle>
@@ -181,8 +184,6 @@ export default function AttendancePage() {
               </Table>
             </CardContent>
           </Card>
-        </div>
-        <div className="lg:col-span-1">
           <Card>
             <CardHeader>
               <CardTitle>Add New Student</CardTitle>
@@ -214,6 +215,21 @@ export default function AttendancePage() {
                   Add Student
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Attendance QR Code</CardTitle>
+              <CardDescription>
+                Students can scan this code to mark themselves as present.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center p-4">
+              <div className="bg-white p-4 rounded-lg">
+                <QRCode value={classQrCodeValue} size={200} />
+              </div>
             </CardContent>
           </Card>
         </div>

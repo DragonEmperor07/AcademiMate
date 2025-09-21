@@ -1,13 +1,49 @@
 "use client";
 
-import { BarChart, Clock, ScanLine, TrendingUp } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { BarChart, Clock, ScanLine, TrendingUp, Camera, CameraOff } from "lucide-react";
+import Webcam from "react-webcam";
 import { toast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function DashboardPage() {
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const webcamRef = useRef<Webcam>(null);
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setHasCameraPermission(false);
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+        if (webcamRef.current && webcamRef.current.video) {
+           webcamRef.current.video.srcObject = stream;
+        }
+         // Clean up the stream when the component unmounts
+        return () => {
+          stream.getTracks().forEach(track => track.stop());
+        };
+      } catch (error) {
+        console.error("Error accessing camera:", error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
+    };
+
+    getCameraPermission();
+  }, []);
+
+
   const handleScan = () => {
     toast({
       title: "Attendance Marked!",
@@ -64,21 +100,41 @@ export default function DashboardPage() {
       <div>
         <Card className="bg-primary/10 border-primary/20">
           <CardHeader>
-            <div className="flex items-center gap-2">
-                <CardTitle className="font-headline text-xl">Mark Your Attendance</CardTitle>
-                <Badge variant="destructive" className="h-6 w-6 justify-center">N</Badge>
-            </div>
+            <CardTitle className="font-headline text-xl">Mark Your Attendance</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
-            <div className="p-4 bg-background rounded-lg shadow-inner">
-               <ScanLine className="h-24 w-24 text-primary" />
+             <div className="relative w-full max-w-sm aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
+              {hasCameraPermission === null && (
+                <div className="flex items-center justify-center h-full">
+                  <p>Loading Camera...</p>
+                </div>
+              )}
+              {hasCameraPermission === false && (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <CameraOff className="h-16 w-16 mb-4"/>
+                   <Alert variant="destructive" className="items-center">
+                    <AlertTitle>Camera Access Required</AlertTitle>
+                    <AlertDescription>
+                      Please allow camera access to use this feature.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+               {hasCameraPermission === true && (
+                  <Webcam
+                    audio={false}
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    className="w-full h-full object-cover"
+                  />
+               )}
             </div>
             <p className="text-muted-foreground max-w-sm">
               Scan the QR code in your classroom to automatically mark your attendance for the current period.
             </p>
             <Button size="lg" onClick={handleScan}>
-              <ScanLine className="mr-2 h-5 w-5" />
-              Simulate QR Scan
+              <Camera className="mr-2 h-5 w-5" />
+              Simulate Scan
             </Button>
           </CardContent>
         </Card>
