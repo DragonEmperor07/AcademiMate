@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight } from "lucide-react";
 
 import { AppLogo } from "@/components/app-logo";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -16,6 +21,7 @@ export default function LoginPage() {
 
   const portalName = role.charAt(0).toUpperCase() + role.slice(1);
   const dashboardPath = role === "staff" ? "/attendance" : "/dashboard";
+  const isStudent = role === "student";
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background">
@@ -32,18 +38,20 @@ export default function LoginPage() {
         <Card>
           <CardHeader>
             <CardTitle>Welcome Back</CardTitle>
-            <CardDescription>
-              Please sign in to continue.
-            </CardDescription>
+            <CardDescription>Please sign in to continue.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor={isStudent ? "studentId" : "email"}>
+                  {isStudent ? "Student ID" : "Email"}
+                </Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
+                  id={isStudent ? "studentId" : "email"}
+                  type={isStudent ? "text" : "email"}
+                  placeholder={
+                    isStudent ? "e.g. S010" : "name@example.com"
+                  }
                   required
                 />
               </div>
@@ -60,21 +68,21 @@ export default function LoginPage() {
           </CardContent>
         </Card>
         <p className="px-8 text-center text-sm text-muted-foreground">
-            By clicking continue, you agree to our{" "}
-            <Link
-                href="#"
-                className="underline underline-offset-4 hover:text-primary"
-            >
-                Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link
-                href="#"
-                className="underline underline-offset-4 hover:text-primary"
-            >
-                Privacy Policy
-            </Link>
-            .
+          By clicking continue, you agree to our{" "}
+          <Link
+            href="#"
+            className="underline underline-offset-4 hover:text-primary"
+          >
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="#"
+            className="underline underline-offset-4 hover:text-primary"
+          >
+            Privacy Policy
+          </Link>
+          .
         </p>
       </div>
     </main>
