@@ -1,15 +1,15 @@
 
 let students = [
-  { name: 'Liam Johnson', id: 'S001', password: 'password', status: 'Present' },
-  { name: 'Olivia Smith', id: 'S002', password: 'password', status: 'Present' },
+  { name: 'Liam Johnson', id: 'S001', password: 'password', status: 'Absent' },
+  { name: 'Olivia Smith', id: 'S002', password: 'password', status: 'Absent' },
   { name: 'Noah Williams', id: 'S003', password: 'password', status: 'Absent' },
-  { name: 'Emma Brown', id: 'S004', password: 'password', status: 'Present' },
-  { name: 'Oliver Jones', id: 'S005', password: 'password', status: 'Present' },
-  { name: 'Ava Garcia', id: 'S006', password: 'password', status: 'Present' },
+  { name: 'Emma Brown', id: 'S004', password: 'password', status: 'Absent' },
+  { name: 'Oliver Jones', id: 'S005', password: 'password', status: 'Absent' },
+  { name: 'Ava Garcia', id: 'S006', password: 'password', status: 'Absent' },
   { name: 'Elijah Miller', id: 'S007', password: 'password', status: 'Absent' },
-  { name: 'Charlotte Davis', id: 'S008', password: 'password', status: 'Present' },
-  { name: 'James Rodriguez', id: 'S009', password: 'password', status: 'Present' },
-  { name: 'Jane Doe', id: 'S010', password: 'password', status: 'Present' },
+  { name: 'Charlotte Davis', id: 'S008', password: 'password', status: 'Absent' },
+  { name: 'James Rodriguez', id: 'S009', password: 'password', status: 'Absent' },
+  { name: 'Jane Doe', id: 'S010', password: 'password', status: 'Absent' },
 ];
 
 let listeners: (() => void)[] = [];
@@ -50,5 +50,10 @@ export function updateStudentStatus(studentId: string, newStatus: 'Present' | 'A
 
 export function addStudent(student: {name: string, id: string, status: 'Present' | 'Absent', password: string}) {
     students.push(student);
+    notifyListeners();
+}
+
+export function resetAllStudentStatuses() {
+    students = students.map(student => ({ ...student, status: 'Absent' }));
     notifyListeners();
 }

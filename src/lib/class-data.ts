@@ -1,3 +1,4 @@
+import { resetAllStudentStatuses } from "./student-data";
 
 export type Class = {
   time: string;
@@ -113,9 +114,11 @@ function parseTime(timeString: string): [Date, Date] {
 export function updateClassStatuses() {
     const now = new Date();
     let changed = false;
+    let newClassInProgress = false;
 
     classes.forEach(classItem => {
         const [startTime, endTime] = parseTime(classItem.time);
+        const oldStatus = classItem.status;
         let newStatus: Class['status'] = 'Upcoming';
 
         if (now >= startTime && now < endTime) {
@@ -126,13 +129,18 @@ export function updateClassStatuses() {
             newStatus = 'Upcoming';
         }
         
-        if (classItem.status !== newStatus) {
+        if (oldStatus !== newStatus) {
             classItem.status = newStatus;
             changed = true;
+            if (newStatus === 'In Progress') {
+                newClassInProgress = true;
+            }
         }
     });
 
-    if (changed) {
+    if (newClassInProgress) {
+        resetAllStudentStatuses();
+    } else if (changed) {
         notifyListeners();
     }
 }
