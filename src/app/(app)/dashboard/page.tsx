@@ -64,12 +64,22 @@ export default function DashboardPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setStudents([...studentData]);
+         if (loggedInStudent) {
+            const student = getStudentById(loggedInStudent.id);
+            setLoggedInStudent(student);
+        }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [loggedInStudent]);
+
   const handleScan = () => {
     if (loggedInStudent) {
       updateStudentStatus(loggedInStudent.id, "Present");
       const updatedStudent = getStudentById(loggedInStudent.id);
       setLoggedInStudent(updatedStudent);
-      // This will force a re-render to update the attendance percentage
       setStudents([...studentData]);
 
       toast({

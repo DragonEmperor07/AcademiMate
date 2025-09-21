@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
-import { students as initialStudents } from "@/lib/student-data";
+import { students as initialStudents, updateStudentStatus } from "@/lib/student-data";
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState(initialStudents);
@@ -32,9 +32,13 @@ export default function AttendancePage() {
 
   useEffect(() => {
     // This effect will re-sync the state with the mock data if it changes.
-    // This is a workaround for the mock data being mutated.
-    setAttendanceData(initialStudents);
-  }, [initialStudents]);
+    // This is a workaround for the mock data being mutated across pages.
+    const interval = setInterval(() => {
+        setAttendanceData([...initialStudents]);
+    }, 500); // Check for updates periodically
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const presentCount = attendanceData.filter(
     (s) => s.status === "Present"
@@ -53,7 +57,8 @@ export default function AttendancePage() {
       
       // Note: This only updates the local state, not the central `students` array.
       // For a real app, you would send this to a server.
-      setAttendanceData([ ...attendanceData, newStudent ]);
+      initialStudents.push(newStudent);
+      setAttendanceData([ ...initialStudents ]);
       
       setNewStudentName("");
       setNewStudentId("");
@@ -61,13 +66,8 @@ export default function AttendancePage() {
   };
 
   const handleStatusChange = (studentId: string, newStatus: "Present" | "Absent") => {
-    setAttendanceData(
-      attendanceData.map((student) =>
-        student.id === studentId ? { ...student, status: newStatus } : student
-      )
-    );
-     // In a real app, you'd also call an update function here to persist the change
-    // e.g., updateStudentStatus(studentId, newStatus);
+    updateStudentStatus(studentId, newStatus);
+    setAttendanceData([...initialStudents]);
   };
 
   const classQrCodeValue = "MTH-302-2024-FALL";
