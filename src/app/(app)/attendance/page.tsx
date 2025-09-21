@@ -16,19 +16,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlusCircle } from "lucide-react";
+import { students } from "@/lib/student-data";
 
-const initialAttendanceData = [
-  { name: "Liam Johnson", id: "S001", status: "Present" },
-  { name: "Olivia Smith", id: "S002", status: "Present" },
-  { name: "Noah Williams", id: "S003", status: "Absent" },
-  { name: "Emma Brown", id: "S004", status: "Present" },
-  { name: "Oliver Jones", id: "S005", status: "Present" },
-  { name: "Ava Garcia", id: "S006", status: "Present" },
-  { name: "Elijah Miller", id: "S007", status: "Absent" },
-  { name: "Charlotte Davis", id: "S008", status: "Present" },
-  { name: "James Rodriguez", id: "S009", status: "Present" },
-  { name: "Sophia Martinez", id: "S010", status: "Present" },
-];
+const initialAttendanceData = students.map(({ name, id, status }) => ({
+  name,
+  id,
+  status: status || 'Absent'
+}));
+
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState(initialAttendanceData);
@@ -158,6 +153,7 @@ export default function AttendancePage() {
                 <div className="space-y-2">
                   <Label htmlFor="student-name">Student Name</Label>
                   <Input
+                    suppressHydrationWarning
                     id="student-name"
                     placeholder="e.g., John Doe"
                     value={newStudentName}
@@ -167,6 +163,7 @@ export default function AttendancePage() {
                 <div className="space-y-2">
                   <Label htmlFor="student-id">Student ID</Label>
                   <Input
+                    suppressHydrationWarning
                     id="student-id"
                     placeholder="e.g., S011"
                     value={newStudentId}
