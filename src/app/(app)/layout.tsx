@@ -22,9 +22,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
-  SidebarTrigger,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { AppHeader } from "@/components/app-header";
 import { AppLogo } from "@/components/app-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getStudentById } from "@/lib/student-data";
@@ -66,10 +66,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center justify-between">
-            <AppLogo />
-            <SidebarTrigger />
-          </div>
+          <AppLogo />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
@@ -203,9 +200,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+        <AppHeader />
+        <main className="min-h-screen p-4 sm:p-6 lg:p-8">
           {children}
-        </div>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );
