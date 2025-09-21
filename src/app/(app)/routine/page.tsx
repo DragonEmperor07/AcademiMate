@@ -24,7 +24,7 @@ export default function RoutinePage() {
     const storedProfile = studentId ? localStorage.getItem(`profile_${studentId}`) : null;
     const classes = getClasses();
     const classSchedule = classes.length > 0 
-      ? classes.map(c => `${c.subject} (${c.time})`).join(', ') 
+      ? classes.map(c => `${c.subject} (${c.time})`).join('\n') 
       : "No classes scheduled for today.";
 
     if (storedProfile) {
@@ -74,7 +74,9 @@ export default function RoutinePage() {
             <CardContent className="space-y-4 text-sm">
               <div>
                 <h4 className="font-semibold">Class Schedule</h4>
-                <p className="text-muted-foreground">{studentProfile.classSchedule}</p>
+                <div className="text-muted-foreground whitespace-pre-line">
+                  {studentProfile.classSchedule}
+                </div>
               </div>
                <div>
                 <h4 className="font-semibold">Interests</h4>
