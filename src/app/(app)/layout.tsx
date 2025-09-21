@@ -26,15 +26,40 @@ import {
 } from "@/components/ui/sidebar";
 import { AppLogo } from "@/components/app-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getStudentById } from "@/lib/student-data";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [user, setUser] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const role = localStorage.getItem("loggedInUserRole");
+    const userId = localStorage.getItem("loggedInUserId");
+    setUserRole(role);
+
+    if (role === "student" && userId) {
+      setUser(getStudentById(userId));
+    } else if (role === "staff") {
+      setUser({ name: "Dr. Alan Grant", initials: "AG" });
+    }
+  }, [pathname]);
 
   const isActive = (path: string) => {
     return pathname === path;
   };
   
-  const isStaff = pathname.startsWith('/attendance');
+  const isStaff = userRole === 'staff';
+  const isStudent = userRole === 'student';
+
+  const getInitials = (name: string) => {
+    if (!name) return "";
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      return `${nameParts[0][0]}${nameParts[1][0]}`;
+    }
+    return name[0];
+  };
 
   return (
     <SidebarProvider>
@@ -47,7 +72,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {!isStaff && (
+            {isStudent && (
               <>
                 <SidebarMenuItem>
                   <SidebarMenuButton
@@ -61,18 +86,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive("/attendance")}
-                      tooltip="Attendance"
-                    >
-                      <Link href="/attendance">
-                        <ClipboardCheck />
-                        <span>Attendance</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -112,18 +125,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </>
             )}
             {isStaff && (
-               <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive("/attendance")}
-                  tooltip="Attendance"
-                >
-                  <Link href="/attendance">
-                    <ClipboardCheck />
-                    <span>Attendance</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+               <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/attendance")}
+                    tooltip="Attendance"
+                  >
+                    <Link href="/attendance">
+                      <ClipboardCheck />
+                      <span>Attendance</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/dashboard")}
+                    tooltip="Dashboard"
+                  >
+                    <Link href="/dashboard">
+                      <LayoutDashboard />
+                      <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+               </>
             )}
           </SidebarMenu>
         </SidebarContent>
@@ -131,10 +158,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
            <div className="flex items-center gap-3">
              <Avatar className="h-9 w-9">
                 <AvatarImage src={isStaff ? "https://picsum.photos/seed/2/100/100" : "https://picsum.photos/seed/1/100/100"} alt="Avatar" data-ai-hint="person avatar" />
-                <AvatarFallback>{isStaff ? "AG" : "JD"}</AvatarFallback>
+                <AvatarFallback>{user ? getInitials(user.name) : ""}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                  <span className="text-sm font-medium">{isStaff ? "Dr. Alan Grant" : "Jane Doe"}</span>
+                  <span className="text-sm font-medium">{user ? user.name : "Loading..."}</span>
                   <span className="text-xs text-muted-foreground">{isStaff ? "Staff" : "Student"}</span>
               </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AppLogo } from "@/components/app-logo";
@@ -30,6 +30,12 @@ export default function LoginPage() {
 
   const role = searchParams.get("role") || "student"; // Default to student
 
+  useEffect(() => {
+    // Clear any existing user session on login page load
+    localStorage.removeItem("loggedInUserId");
+    localStorage.removeItem("loggedInUserRole");
+  }, []);
+
   const portalName = role.charAt(0).toUpperCase() + role.slice(1);
   const dashboardPath = role === "staff" ? "/attendance" : "/dashboard";
   const isStudent = role === "student";
@@ -40,6 +46,8 @@ export default function LoginPage() {
 
     if (isStudent) {
       if (validateStudent(id, password)) {
+        localStorage.setItem("loggedInUserId", id);
+        localStorage.setItem("loggedInUserRole", "student");
         router.push(dashboardPath);
       } else {
         setError("Invalid Student ID or password.");
@@ -52,6 +60,8 @@ export default function LoginPage() {
     } else {
       // Staff login
       if (id === "staff@school.com" && password === "password") {
+        localStorage.setItem("loggedInUserId", "staff-001");
+        localStorage.setItem("loggedInUserRole", "staff");
         router.push(dashboardPath);
       } else {
         setError("Invalid staff credentials.");

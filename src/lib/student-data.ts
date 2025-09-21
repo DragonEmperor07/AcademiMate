@@ -1,4 +1,4 @@
-export const students = [
+export let students = [
   { name: 'Liam Johnson', id: 'S001', password: 'password', status: 'Present' },
   { name: 'Olivia Smith', id: 'S002', password: 'password', status: 'Present' },
   { name: 'Noah Williams', id: 'S003', password: 'password', status: 'Absent' },
@@ -17,4 +17,14 @@ export function validateStudent(studentId: string, password_param: string) {
     return false;
   }
   return student.password === password_param;
+}
+
+export function getStudentById(studentId: string) {
+  return students.find(s => s.id === studentId) || null;
+}
+
+export function updateStudentStatus(studentId: string, newStatus: 'Present' | 'Absent') {
+  students = students.map(student => 
+    student.id === studentId ? { ...student, status: newStatus } : student
+  );
 }

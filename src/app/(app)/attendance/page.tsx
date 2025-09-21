@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import QRCode from "react-qr-code";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -23,19 +23,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
-import { students } from "@/lib/student-data";
-
-const initialAttendanceData = students.map(({ name, id, status }) => ({
-  name,
-  id,
-  status: status,
-}));
-
+import { students as initialStudents } from "@/lib/student-data";
 
 export default function AttendancePage() {
-  const [attendanceData, setAttendanceData] = useState(initialAttendanceData);
+  const [attendanceData, setAttendanceData] = useState(initialStudents);
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentId, setNewStudentId] = useState("");
+
+  useEffect(() => {
+    // This effect will re-sync the state with the mock data if it changes.
+    // This is a workaround for the mock data being mutated.
+    setAttendanceData(initialStudents);
+  }, [initialStudents]);
 
   const presentCount = attendanceData.filter(
     (s) => s.status === "Present"
@@ -45,14 +44,17 @@ export default function AttendancePage() {
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (newStudentName && newStudentId) {
-      setAttendanceData([
-        ...attendanceData,
-        {
-          name: newStudentName,
-          id: newStudentId,
-          status: "Absent",
-        },
-      ]);
+      const newStudent = {
+        name: newStudentName,
+        id: newStudentId,
+        status: "Absent",
+        password: 'password' // Add a default password
+      };
+      
+      // Note: This only updates the local state, not the central `students` array.
+      // For a real app, you would send this to a server.
+      setAttendanceData([ ...attendanceData, newStudent ]);
+      
       setNewStudentName("");
       setNewStudentId("");
     }
@@ -64,6 +66,8 @@ export default function AttendancePage() {
         student.id === studentId ? { ...student, status: newStatus } : student
       )
     );
+     // In a real app, you'd also call an update function here to persist the change
+    // e.g., updateStudentStatus(studentId, newStatus);
   };
 
   const classQrCodeValue = "MTH-302-2024-FALL";

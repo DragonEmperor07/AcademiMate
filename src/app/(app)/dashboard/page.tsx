@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getStudentById, updateStudentStatus, students } from "@/lib/student-data";
 
 const videoConstraints = {
   facingMode: "environment",
@@ -15,9 +16,16 @@ const videoConstraints = {
 
 export default function DashboardPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [loggedInStudent, setLoggedInStudent] = useState<any>(null);
   const webcamRef = useRef<Webcam>(null);
 
   useEffect(() => {
+    const studentId = localStorage.getItem("loggedInUserId");
+    if (studentId) {
+      const student = getStudentById(studentId);
+      setLoggedInStudent(student);
+    }
+    
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setHasCameraPermission(false);
@@ -49,16 +57,27 @@ export default function DashboardPage() {
 
 
   const handleScan = () => {
-    toast({
-      title: "Attendance Marked!",
-      description: "You've been successfully marked present for 'Advanced Mathematics'.",
-    });
+    if (loggedInStudent) {
+      updateStudentStatus(loggedInStudent.id, "Present");
+      const updatedStudent = getStudentById(loggedInStudent.id);
+      setLoggedInStudent(updatedStudent);
+
+      toast({
+        title: "Attendance Marked!",
+        description: `You've been successfully marked present for 'Advanced Mathematics'.`,
+      });
+    }
   };
+  
+  const attendancePercentage = () => {
+    const presentCount = students.filter(s => s.status === 'Present').length;
+    return Math.round((presentCount / students.length) * 100);
+  }
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Welcome Back, Jane!"
+        title={loggedInStudent ? `Welcome Back, ${loggedInStudent.name.split(' ')[0]}!` : "Welcome Back!"}
         description="Your academic snapshot for today."
       />
 
@@ -66,13 +85,15 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Attendance Rate
+              Class Attendance Rate
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">92%</div>
-            <p className="text-xs text-muted-foreground">+2% from last month</p>
+            <div className="text-2xl font-bold">{attendancePercentage()}%</div>
+            <p className="text-xs text-muted-foreground">
+              {loggedInStudent?.status === 'Present' ? 'You are marked present' : 'You are marked absent'}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -137,9 +158,9 @@ export default function DashboardPage() {
             <p className="text-muted-foreground max-w-sm">
               Scan the QR code in your classroom to automatically mark your attendance for the current period.
             </p>
-            <Button size="lg" onClick={handleScan}>
+            <Button size="lg" onClick={handleScan} disabled={loggedInStudent?.status === 'Present'}>
               <Camera className="mr-2 h-5 w-5" />
-              Simulate Scan
+              {loggedInStudent?.status === 'Present' ? 'Attendance Marked' : 'Simulate Scan'}
             </Button>
           </CardContent>
         </Card>
