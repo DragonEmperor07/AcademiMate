@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookCopy,
   CalendarClock,
   ClipboardCheck,
   LayoutDashboard,
@@ -86,6 +87,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/classes")}
+                    tooltip="Today's Classes"
+                  >
+                    <Link href="/classes">
+                      <BookCopy />
+                      <span>Classes</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -147,6 +160,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <Link href="/attendance">
                       <ClipboardCheck />
                       <span>Attendance</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/classes")}
+                    tooltip="Today's Classes"
+                  >
+                    <Link href="/classes">
+                      <BookCopy />
+                      <span>Classes</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
