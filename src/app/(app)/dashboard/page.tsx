@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getStudentById, updateStudentStatus, getStudents, subscribe } from "@/lib/student-data";
-import { getNextClass, getCurrentClass } from "@/lib/class-data";
+import { getNextClass, getCurrentClass, subscribe as subscribeToClasses, getClasses } from "@/lib/class-data";
 
 const videoConstraints = {
   facingMode: "environment",
@@ -22,8 +22,8 @@ export default function DashboardPage() {
   const webcamRef = useRef<Webcam>(null);
   const [students, setStudents] = useState(getStudents());
   const [currentTime, setCurrentTime] = useState("");
-  const nextClass = getNextClass();
-  const currentClass = getCurrentClass();
+  const [nextClass, setNextClass] = useState(getNextClass());
+  const [currentClass, setCurrentClass] = useState(getCurrentClass());
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -83,7 +83,16 @@ export default function DashboardPage() {
             setLoggedInStudent(student);
         }
     });
-    return () => unsubscribe();
+
+    const unsubscribeClasses = subscribeToClasses(() => {
+        setNextClass(getNextClass());
+        setCurrentClass(getCurrentClass());
+    });
+
+    return () => {
+        unsubscribe();
+        unsubscribeClasses();
+    };
   }, [loggedInStudent]);
 
   const handleScan = () => {

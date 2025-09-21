@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin } from "lucide-react";
-import { classes } from "@/lib/class-data";
+import { getClasses, subscribe } from "@/lib/class-data";
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -20,6 +21,15 @@ const getStatusVariant = (status: string) => {
 };
 
 export default function ClassesPage() {
+  const [classes, setClasses] = useState(getClasses());
+
+  useEffect(() => {
+    const unsubscribe = subscribe(() => {
+      setClasses([...getClasses()]);
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div className="space-y-8">
       <PageHeader

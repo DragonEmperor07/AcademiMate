@@ -8,7 +8,7 @@ export type Class = {
   status: "Completed" | "In Progress" | "Upcoming";
 };
 
-export const classes: Class[] = [
+export let classes: Class[] = [
   {
     time: "09:00 AM - 10:00 AM",
     subject: "Advanced Mathematics",
@@ -42,6 +42,23 @@ export const classes: Class[] = [
     status: "Upcoming",
   },
 ];
+
+let listeners: (() => void)[] = [];
+
+function notifyListeners() {
+  listeners.forEach(listener => listener());
+}
+
+export function subscribe(callback: () => void) {
+  listeners.push(callback);
+  return function unsubscribe() {
+    listeners = listeners.filter(l => l !== callback);
+  };
+}
+
+export function getClasses() {
+    return classes;
+}
 
 export const getCurrentClass = () => {
     return classes.find(c => c.status === 'In Progress');

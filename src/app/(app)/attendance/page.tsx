@@ -24,19 +24,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { getStudents, updateStudentStatus, addStudent, subscribe } from "@/lib/student-data";
-import { getCurrentClass } from "@/lib/class-data";
+import { getCurrentClass, subscribe as subscribeToClasses, getClasses } from "@/lib/class-data";
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState(getStudents());
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentId, setNewStudentId] = useState("");
-  const currentClass = getCurrentClass();
+  const [currentClass, setCurrentClass] = useState(getCurrentClass());
 
   useEffect(() => {
     const unsubscribe = subscribe(() => {
       setAttendanceData([...getStudents()]);
     });
-    return () => unsubscribe();
+    const unsubscribeClasses = subscribeToClasses(() => {
+      setCurrentClass(getCurrentClass());
+    });
+    return () => {
+      unsubscribe();
+      unsubscribeClasses();
+    };
   }, []);
 
   const presentCount = attendanceData.filter(
