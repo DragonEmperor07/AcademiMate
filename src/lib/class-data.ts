@@ -15,7 +15,7 @@ export let classes: Class[] = [
     code: "MTH-302",
     room: "301",
     instructor: "Dr. Alan Grant",
-    status: "Completed",
+    status: "Upcoming",
   },
   {
     time: "10:00 AM - 11:00 AM",
@@ -23,7 +23,7 @@ export let classes: Class[] = [
     code: "PHY-410",
     room: "112",
     instructor: "Dr. Ellie Sattler",
-    status: "In Progress",
+    status: "Upcoming",
   },
   {
     time: "11:00 AM - 12:00 PM",
@@ -65,5 +65,80 @@ export const getCurrentClass = () => {
 }
 
 export const getNextClass = () => {
-    return classes.find(c => c.status === 'Upcoming');
+    // Find the first upcoming class sorted by time
+    const upcomingClasses = classes
+        .filter(c => c.status === 'Upcoming')
+        .sort((a, b) => {
+            const timeA = parseTime(a.time)[0];
+            const timeB = parseTime(b.time)[0];
+            return timeA.getTime() - timeB.getTime();
+        });
+    return upcomingClasses[0];
+}
+
+function parseTime(timeString: string): [Date, Date] {
+    const [startTimeStr, endTimeStr] = timeString.split(' - ');
+    
+    const now = new Date();
+    const startDate = new Date(now);
+    const endDate = new Date(now);
+
+    const [startHour, startMinute] = startTimeStr.slice(0, -3).split(':').map(Number);
+    const startMeridiem = startTimeStr.slice(-2);
+    
+    let adjustedStartHour = startHour;
+    if (startMeridiem === 'PM' && startHour < 12) {
+        adjustedStartHour += 12;
+    } else if (startMeridiem === 'AM' && startHour === 12) {
+        adjustedStartHour = 0;
+    }
+    
+    startDate.setHours(adjustedStartHour, startMinute, 0, 0);
+
+    const [endHour, endMinute] = endTimeStr.slice(0, -3).split(':').map(Number);
+    const endMeridiem = endTimeStr.slice(-2);
+
+    let adjustedEndHour = endHour;
+    if (endMeridiem === 'PM' && endHour < 12) {
+        adjustedEndHour += 12;
+    } else if (endMeridiem === 'AM' && endHour === 12) {
+        adjustedEndHour = 0;
+    }
+
+    endDate.setHours(adjustedEndHour, endMinute, 0, 0);
+    
+    return [startDate, endDate];
+}
+
+export function updateClassStatuses() {
+    const now = new Date();
+    let changed = false;
+
+    classes.forEach(classItem => {
+        const [startTime, endTime] = parseTime(classItem.time);
+        let newStatus: Class['status'] = 'Upcoming';
+
+        if (now >= startTime && now < endTime) {
+            newStatus = 'In Progress';
+        } else if (now >= endTime) {
+            newStatus = 'Completed';
+        } else {
+            newStatus = 'Upcoming';
+        }
+        
+        if (classItem.status !== newStatus) {
+            classItem.status = newStatus;
+            changed = true;
+        }
+    });
+
+    if (changed) {
+        notifyListeners();
+    }
+}
+
+// Run once on load and then every minute
+if (typeof window !== 'undefined') {
+    updateClassStatuses();
+    setInterval(updateClassStatuses, 60000); 
 }
