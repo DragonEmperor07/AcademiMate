@@ -47,19 +47,15 @@ export default function DashboardPage() {
     if (role === 'student') {
       const getCameraPermission = async () => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setHasCameraPermission(false);
-          return;
+            console.error("Camera not supported on this browser.");
+            setHasCameraPermission(false);
+            return;
         }
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          // The stream needs to be managed to avoid it being closed prematurely.
+          // We can let react-webcam handle the stream.
+          await navigator.mediaDevices.getUserMedia({ video: true });
           setHasCameraPermission(true);
-          if (webcamRef.current && webcamRef.current.video) {
-             webcamRef.current.video.srcObject = stream;
-          }
-           // Clean up the stream when the component unmounts
-          return () => {
-            stream.getTracks().forEach(track => track.stop());
-          };
         } catch (error) {
           console.error("Error accessing camera:", error);
           setHasCameraPermission(false);
