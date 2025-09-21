@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+const videoConstraints = {
+  facingMode: "environment",
+};
+
 export default function DashboardPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const webcamRef = useRef<Webcam>(null);
@@ -20,7 +24,7 @@ export default function DashboardPage() {
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         setHasCameraPermission(true);
         if (webcamRef.current && webcamRef.current.video) {
            webcamRef.current.video.srcObject = stream;
@@ -126,6 +130,7 @@ export default function DashboardPage() {
                     ref={webcamRef}
                     screenshotFormat="image/jpeg"
                     className="w-full h-full object-cover"
+                    videoConstraints={videoConstraints}
                   />
                )}
             </div>
