@@ -67,7 +67,7 @@ export default function AttendancePage() {
     <div className="space-y-8">
       <PageHeader
         title="Class Attendance"
-        description="Real-time attendance for 'Grade 10 - Advanced Mathematics'"
+        description=""
       />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
