@@ -39,17 +39,23 @@ const getStatusVariant = (status: string) => {
   }
 };
 
-const timeSlots = [
-  "08:00 AM - 09:00 AM",
-  "09:00 AM - 10:00 AM",
-  "10:00 AM - 11:00 AM",
-  "11:00 AM - 12:00 PM",
-  "12:00 PM - 01:00 PM",
-  "01:00 PM - 02:00 PM",
-  "02:00 PM - 03:00 PM",
-  "03:00 PM - 04:00 PM",
-  "04:00 PM - 05:00 PM",
-];
+const generateTimeSlots = () => {
+  const slots = [];
+  for (let i = 7; i <= 22; i++) {
+    const hour = i > 12 ? i - 12 : i === 0 ? 12 : i;
+    const ampm = i < 12 || i === 24 ? "AM" : "PM";
+    const displayHour = hour < 10 ? `0${hour}` : hour;
+
+    slots.push(`${displayHour}:00 ${ampm}`);
+    if (i < 22) {
+      slots.push(`${displayHour}:30 ${ampm}`);
+    }
+  }
+  return slots;
+};
+
+const timeSlots = generateTimeSlots();
+
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState(getClasses());
@@ -57,7 +63,8 @@ export default function ClassesPage() {
 
   const [newClassSubject, setNewClassSubject] = useState("");
   const [newClassCode, setNewClassCode] = useState("");
-  const [newClassTime, setNewClassTime] = useState("");
+  const [newClassStartTime, setNewClassStartTime] = useState("");
+  const [newClassEndTime, setNewClassEndTime] = useState("");
   const [newClassRoom, setNewClassRoom] = useState("");
   const [newClassInstructor, setNewClassInstructor] = useState("");
 
@@ -82,18 +89,19 @@ export default function ClassesPage() {
   }, []);
 
   const handleAddClass = () => {
-    if (newClassSubject && newClassCode && newClassTime && newClassRoom && newClassInstructor) {
+    if (newClassSubject && newClassCode && newClassStartTime && newClassEndTime && newClassRoom && newClassInstructor) {
       addClass({
         subject: newClassSubject,
         code: newClassCode,
-        time: newClassTime,
+        time: `${newClassStartTime} - ${newClassEndTime}`,
         room: newClassRoom,
         instructor: newClassInstructor,
         status: "Upcoming",
       });
       setNewClassSubject("");
       setNewClassCode("");
-      setNewClassTime("");
+      setNewClassStartTime("");
+      setNewClassEndTime("");
       setNewClassRoom("");
       setNewClassInstructor("");
     }
@@ -137,16 +145,33 @@ export default function ClassesPage() {
                   <Input id="code" value={newClassCode} onChange={(e) => setNewClassCode(e.target.value)} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="time" className="text-right">
-                    Time
+                  <Label htmlFor="start-time" className="text-right">
+                    Start Time
                   </Label>
-                  <Select value={newClassTime} onValueChange={setNewClassTime}>
+                  <Select value={newClassStartTime} onValueChange={setNewClassStartTime}>
                     <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select a time slot" />
+                      <SelectValue placeholder="Select a start time" />
                     </SelectTrigger>
                     <SelectContent>
                       {timeSlots.map((slot) => (
-                        <SelectItem key={slot} value={slot}>
+                        <SelectItem key={`start-${slot}`} value={slot}>
+                          {slot}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="end-time" className="text-right">
+                    End Time
+                  </Label>
+                  <Select value={newClassEndTime} onValueChange={setNewClassEndTime}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select an end time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeSlots.map((slot) => (
+                        <SelectItem key={`end-${slot}`} value={slot}>
                           {slot}
                         </SelectItem>
                       ))}
