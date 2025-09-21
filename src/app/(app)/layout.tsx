@@ -129,24 +129,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={isActive("/attendance")}
-                    tooltip="Attendance"
-                  >
-                    <Link href="/attendance">
-                      <ClipboardCheck />
-                      <span>Attendance</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
                     isActive={isActive("/dashboard")}
                     tooltip="Dashboard"
                   >
                     <Link href="/dashboard">
                       <LayoutDashboard />
                       <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/attendance")}
+                    tooltip="Attendance"
+                  >
+                    <Link href="/attendance">
+                      <ClipboardCheck />
+                      <span>Attendance</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

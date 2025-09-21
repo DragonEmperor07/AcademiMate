@@ -16,45 +16,52 @@ const videoConstraints = {
 
 export default function DashboardPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loggedInStudent, setLoggedInStudent] = useState<any>(null);
   const webcamRef = useRef<Webcam>(null);
 
   useEffect(() => {
-    const studentId = localStorage.getItem("loggedInUserId");
-    if (studentId) {
-      const student = getStudentById(studentId);
-      setLoggedInStudent(student);
+    const role = localStorage.getItem("loggedInUserRole");
+    setUserRole(role);
+
+    if (role === 'student') {
+      const studentId = localStorage.getItem("loggedInUserId");
+      if (studentId) {
+        const student = getStudentById(studentId);
+        setLoggedInStudent(student);
+      }
     }
     
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setHasCameraPermission(false);
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        setHasCameraPermission(true);
-        if (webcamRef.current && webcamRef.current.video) {
-           webcamRef.current.video.srcObject = stream;
+    if (role === 'student') {
+      const getCameraPermission = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setHasCameraPermission(false);
+          return;
         }
-         // Clean up the stream when the component unmounts
-        return () => {
-          stream.getTracks().forEach(track => track.stop());
-        };
-      } catch (error) {
-        console.error("Error accessing camera:", error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
-      }
-    };
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          setHasCameraPermission(true);
+          if (webcamRef.current && webcamRef.current.video) {
+             webcamRef.current.video.srcObject = stream;
+          }
+           // Clean up the stream when the component unmounts
+          return () => {
+            stream.getTracks().forEach(track => track.stop());
+          };
+        } catch (error) {
+          console.error("Error accessing camera:", error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use this app.',
+          });
+        }
+      };
 
-    getCameraPermission();
+      getCameraPermission();
+    }
   }, []);
-
 
   const handleScan = () => {
     if (loggedInStudent) {
@@ -70,14 +77,25 @@ export default function DashboardPage() {
   };
   
   const attendancePercentage = () => {
+    if (students.length === 0) return 0;
     const presentCount = students.filter(s => s.status === 'Present').length;
     return Math.round((presentCount / students.length) * 100);
+  }
+
+  const getPageTitle = () => {
+    if (userRole === 'staff') {
+      return 'Welcome, Staff Member!';
+    }
+    if (loggedInStudent) {
+      return `Welcome Back, ${loggedInStudent.name.split(' ')[0]}!`;
+    }
+    return 'Welcome Back!';
   }
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title={loggedInStudent ? `Welcome Back, ${loggedInStudent.name.split(' ')[0]}!` : "Welcome Back!"}
+        title={getPageTitle()}
         description="Your academic snapshot for today."
       />
 
@@ -92,7 +110,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{attendancePercentage()}%</div>
             <p className="text-xs text-muted-foreground">
-              {loggedInStudent?.status === 'Present' ? 'You are marked present' : 'You are marked absent'}
+              {userRole === 'student' && (loggedInStudent?.status === 'Present' ? 'You are marked present' : 'You are marked absent')}
             </p>
           </CardContent>
         </Card>
@@ -122,49 +140,51 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div>
-        <Card className="bg-primary/10 border-primary/20">
-          <CardHeader>
-            <CardTitle className="font-headline text-xl">Mark Your Attendance</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
-             <div className="relative w-full max-w-sm aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
-              {hasCameraPermission === null && (
-                <div className="flex items-center justify-center h-full">
-                  <p>Loading Camera...</p>
-                </div>
-              )}
-              {hasCameraPermission === false && (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <CameraOff className="h-16 w-16 mb-4"/>
-                   <Alert variant="destructive" className="items-center">
-                    <AlertTitle>Camera Access Required</AlertTitle>
-                    <AlertDescription>
-                      Please allow camera access to use this feature.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-               {hasCameraPermission === true && (
-                  <Webcam
-                    audio={false}
-                    ref={webcamRef}
-                    screenshotFormat="image/jpeg"
-                    className="w-full h-full object-cover"
-                    videoConstraints={videoConstraints}
-                  />
-               )}
-            </div>
-            <p className="text-muted-foreground max-w-sm">
-              Scan the QR code in your classroom to automatically mark your attendance for the current period.
-            </p>
-            <Button size="lg" onClick={handleScan} disabled={loggedInStudent?.status === 'Present'}>
-              <Camera className="mr-2 h-5 w-5" />
-              {loggedInStudent?.status === 'Present' ? 'Attendance Marked' : 'Simulate Scan'}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      {userRole === 'student' && (
+        <div>
+          <Card className="bg-primary/10 border-primary/20">
+            <CardHeader>
+              <CardTitle className="font-headline text-xl">Mark Your Attendance</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
+               <div className="relative w-full max-w-sm aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
+                {hasCameraPermission === null && (
+                  <div className="flex items-center justify-center h-full">
+                    <p>Loading Camera...</p>
+                  </div>
+                )}
+                {hasCameraPermission === false && (
+                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                    <CameraOff className="h-16 w-16 mb-4"/>
+                     <Alert variant="destructive" className="items-center">
+                      <AlertTitle>Camera Access Required</AlertTitle>
+                      <AlertDescription>
+                        Please allow camera access to use this feature.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+                 {hasCameraPermission === true && (
+                    <Webcam
+                      audio={false}
+                      ref={webcamRef}
+                      screenshotFormat="image/jpeg"
+                      className="w-full h-full object-cover"
+                      videoConstraints={videoConstraints}
+                    />
+                 )}
+              </div>
+              <p className="text-muted-foreground max-w-sm">
+                Scan the QR code in your classroom to automatically mark your attendance for the current period.
+              </p>
+              <Button size="lg" onClick={handleScan} disabled={loggedInStudent?.status === 'Present'}>
+                <Camera className="mr-2 h-5 w-5" />
+                {loggedInStudent?.status === 'Present' ? 'Attendance Marked' : 'Simulate Scan'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
