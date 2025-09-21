@@ -8,7 +8,6 @@ export const students = [
   { name: 'Elijah Miller', id: 'S007', password: 'password', status: 'Absent' },
   { name: 'Charlotte Davis', id: 'S008', password: 'password', status: 'Present' },
   { name: 'James Rodriguez', id: 'S009', password: 'password', status: 'Present' },
-  { name: 'Sophia Martinez', id: 'S010', password: 'password', status: 'Present' },
   { name: 'Jane Doe', id: 'S010', password: 'password', status: 'Present' },
 ];
 
