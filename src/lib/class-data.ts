@@ -61,12 +61,22 @@ export function getClasses() {
     return classes;
 }
 
+export function addClass(newClass: Class) {
+  classes.push(newClass);
+  updateClassStatuses();
+  notifyListeners();
+}
+
+export function removeClass(classCode: string) {
+  classes = classes.filter(c => c.code !== classCode);
+  notifyListeners();
+}
+
 export const getCurrentClass = () => {
     return classes.find(c => c.status === 'In Progress');
 }
 
 export const getNextClass = () => {
-    // Find the first upcoming class sorted by time
     const upcomingClasses = classes
         .filter(c => c.status === 'Upcoming')
         .sort((a, b) => {
@@ -114,7 +124,7 @@ function parseTime(timeString: string): [Date, Date] {
 export function updateClassStatuses() {
     const now = new Date();
     let changed = false;
-    let newClassInProgress = false;
+    let wasNewClassInProgress = false;
 
     classes.forEach(classItem => {
         const [startTime, endTime] = parseTime(classItem.time);
@@ -132,13 +142,13 @@ export function updateClassStatuses() {
         if (oldStatus !== newStatus) {
             classItem.status = newStatus;
             changed = true;
-            if (newStatus === 'In Progress') {
-                newClassInProgress = true;
+            if (newStatus === 'In Progress' && oldStatus !== 'In Progress') {
+                wasNewClassInProgress = true;
             }
         }
     });
 
-    if (newClassInProgress) {
+    if (wasNewClassInProgress) {
         resetAllStudentStatuses();
     } else if (changed) {
         notifyListeners();
