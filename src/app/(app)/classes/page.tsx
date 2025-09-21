@@ -18,6 +18,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -31,6 +38,18 @@ const getStatusVariant = (status: string) => {
       return "outline";
   }
 };
+
+const timeSlots = [
+  "08:00 AM - 09:00 AM",
+  "09:00 AM - 10:00 AM",
+  "10:00 AM - 11:00 AM",
+  "11:00 AM - 12:00 PM",
+  "12:00 PM - 01:00 PM",
+  "01:00 PM - 02:00 PM",
+  "02:00 PM - 03:00 PM",
+  "03:00 PM - 04:00 PM",
+  "04:00 PM - 05:00 PM",
+];
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState(getClasses());
@@ -121,7 +140,18 @@ export default function ClassesPage() {
                   <Label htmlFor="time" className="text-right">
                     Time
                   </Label>
-                  <Input id="time" value={newClassTime} onChange={(e) => setNewClassTime(e.target.value)} className="col-span-3" placeholder="e.g., 02:00 PM - 03:00 PM" />
+                  <Select value={newClassTime} onValueChange={setNewClassTime}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select a time slot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeSlots.map((slot) => (
+                        <SelectItem key={slot} value={slot}>
+                          {slot}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="room" className="text-right">
