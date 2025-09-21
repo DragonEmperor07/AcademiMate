@@ -19,13 +19,13 @@ export default function Home() {
 
       <div className="mt-12 grid gap-8 md:grid-cols-2 max-w-4xl w-full">
         <RoleCard
-          href="/dashboard"
+          href="/login?role=student"
           icon={<User className="h-10 w-10 text-primary" />}
           title="I'm a Student"
           description="Access your dashboard, mark attendance, and get personalized recommendations."
         />
         <RoleCard
-          href="/attendance"
+          href="/login?role=staff"
           icon={<GraduationCap className="h-10 w-10 text-primary" />}
           title="I'm Staff"
           description="View real-time class attendance and manage student activities."
