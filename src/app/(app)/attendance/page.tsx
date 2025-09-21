@@ -15,7 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { students } from "@/lib/student-data";
 
 const initialAttendanceData = students.map(({ name, id, status }) => ({
@@ -49,6 +55,14 @@ export default function AttendancePage() {
       setNewStudentName("");
       setNewStudentId("");
     }
+  };
+
+  const handleStatusChange = (studentId: string, newStatus: "Present" | "Absent") => {
+    setAttendanceData(
+      attendanceData.map((student) =>
+        student.id === studentId ? { ...student, status: newStatus } : student
+      )
+    );
   };
 
   return (
@@ -110,7 +124,8 @@ export default function AttendancePage() {
                   <TableRow>
                     <TableHead>Student Name</TableHead>
                     <TableHead>Student ID</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -120,7 +135,7 @@ export default function AttendancePage() {
                         {student.name}
                       </TableCell>
                       <TableCell>{student.id}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell>
                         <Badge
                           variant={
                             student.status === "Present"
@@ -135,6 +150,30 @@ export default function AttendancePage() {
                         >
                           {student.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                         <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleStatusChange(student.id, "Present")}
+                              disabled={student.status === 'Present'}
+                            >
+                              Mark as Present
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleStatusChange(student.id, "Absent")}
+                              disabled={student.status === 'Absent'}
+                            >
+                              Mark as Absent
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
