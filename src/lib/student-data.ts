@@ -1,4 +1,5 @@
-export let students = [
+
+let students = [
   { name: 'Liam Johnson', id: 'S001', password: 'password', status: 'Present' },
   { name: 'Olivia Smith', id: 'S002', password: 'password', status: 'Present' },
   { name: 'Noah Williams', id: 'S003', password: 'password', status: 'Absent' },
@@ -10,6 +11,23 @@ export let students = [
   { name: 'James Rodriguez', id: 'S009', password: 'password', status: 'Present' },
   { name: 'Jane Doe', id: 'S010', password: 'password', status: 'Present' },
 ];
+
+let listeners: (() => void)[] = [];
+
+function notifyListeners() {
+  listeners.forEach(listener => listener());
+}
+
+export function subscribe(callback: () => void) {
+  listeners.push(callback);
+  return function unsubscribe() {
+    listeners = listeners.filter(l => l !== callback);
+  };
+}
+
+export function getStudents() {
+    return students;
+}
 
 export function validateStudent(studentId: string, password_param: string) {
   const student = students.find(s => s.id === studentId);
@@ -27,4 +45,10 @@ export function updateStudentStatus(studentId: string, newStatus: 'Present' | 'A
   students = students.map(student => 
     student.id === studentId ? { ...student, status: newStatus } : student
   );
+  notifyListeners();
+}
+
+export function addStudent(student: {name: string, id: string, status: 'Present' | 'Absent', password: string}) {
+    students.push(student);
+    notifyListeners();
 }

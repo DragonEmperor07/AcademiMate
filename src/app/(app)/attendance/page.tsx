@@ -23,21 +23,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
-import { students as initialStudents, updateStudentStatus } from "@/lib/student-data";
+import { getStudents, updateStudentStatus, addStudent, subscribe } from "@/lib/student-data";
 
 export default function AttendancePage() {
-  const [attendanceData, setAttendanceData] = useState(initialStudents);
+  const [attendanceData, setAttendanceData] = useState(getStudents());
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentId, setNewStudentId] = useState("");
 
   useEffect(() => {
-    // This effect will re-sync the state with the mock data if it changes.
-    // This is a workaround for the mock data being mutated across pages.
-    const interval = setInterval(() => {
-        setAttendanceData([...initialStudents]);
-    }, 500); // Check for updates periodically
-    
-    return () => clearInterval(interval);
+    const unsubscribe = subscribe(() => {
+      setAttendanceData([...getStudents()]);
+    });
+    return () => unsubscribe();
   }, []);
 
   const presentCount = attendanceData.filter(
@@ -51,15 +48,10 @@ export default function AttendancePage() {
       const newStudent = {
         name: newStudentName,
         id: newStudentId,
-        status: "Absent",
-        password: 'password' // Add a default password
+        status: "Absent" as "Absent",
+        password: 'password'
       };
-      
-      // Note: This only updates the local state, not the central `students` array.
-      // For a real app, you would send this to a server.
-      initialStudents.push(newStudent);
-      setAttendanceData([ ...initialStudents ]);
-      
+      addStudent(newStudent);
       setNewStudentName("");
       setNewStudentId("");
     }
@@ -67,7 +59,6 @@ export default function AttendancePage() {
 
   const handleStatusChange = (studentId: string, newStatus: "Present" | "Absent") => {
     updateStudentStatus(studentId, newStatus);
-    setAttendanceData([...initialStudents]);
   };
 
   const classQrCodeValue = "MTH-302-2024-FALL";
@@ -197,7 +188,6 @@ export default function AttendancePage() {
                 <div className="space-y-2">
                   <Label htmlFor="student-name">Student Name</Label>
                   <Input
-                    suppressHydrationWarning
                     id="student-name"
                     placeholder="e.g., John Doe"
                     value={newStudentName}
@@ -207,7 +197,6 @@ export default function AttendancePage() {
                 <div className="space-y-2">
                   <Label htmlFor="student-id">Student ID</Label>
                   <Input
-                    suppressHydrationWarning
                     id="student-id"
                     placeholder="e.g., S011"
                     value={newStudentId}
