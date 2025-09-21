@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,6 +21,25 @@ type SuggestionsFormValues = z.infer<typeof suggestionsSchema>;
 export default function SuggestionsPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const [studentProfile, setStudentProfile] = useState({
+    studentInterests: "",
+    studentStrengths: "",
+    studentCareerGoals: "",
+  });
+
+   useEffect(() => {
+    const studentId = localStorage.getItem("loggedInUserId");
+    const storedProfile = studentId ? localStorage.getItem(`profile_${studentId}`) : null;
+
+    if (storedProfile) {
+      const parsedProfile = JSON.parse(storedProfile);
+      setStudentProfile({
+        studentInterests: parsedProfile.interests,
+        studentStrengths: parsedProfile.strengths,
+        studentCareerGoals: parsedProfile.careerGoals,
+      });
+    }
+  }, []);
 
   const form = useForm<SuggestionsFormValues>({
     resolver: zodResolver(suggestionsSchema),
@@ -34,10 +53,7 @@ export default function SuggestionsPage() {
     setResult("");
     try {
       const response = await getSuggestions({
-        // These values would typically come from the user's profile
-        studentInterests: "Programming, AI, Space Exploration",
-        studentStrengths: "Problem-solving, Creative Thinking, Mathematics",
-        studentCareerGoals: "Software Engineer at a top tech company, focusing on AI development.",
+        ...studentProfile,
         freePeriodDetails: data.freePeriodDetails,
       });
       setResult(response.taskSuggestions);
@@ -61,7 +77,11 @@ export default function SuggestionsPage() {
             <CardHeader>
               <CardTitle>Generate Suggestions</CardTitle>
               <CardDescription>
-                Tell us about your free period, and we'll suggest some productive tasks.
+                Tell us about your free period, and we'll suggest some productive tasks based on your profile:
+                <br/>
+                - Interests: {studentProfile.studentInterests || 'Not set'}
+                <br/>
+                - Goals: {studentProfile.studentCareerGoals || 'Not set'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -93,7 +113,7 @@ export default function SuggestionsPage() {
             </CardContent>
           </Card>
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg-col-span-2">
           <Card className="min-h-[300px]">
             <CardHeader>
               <CardTitle>Your Suggested Tasks</CardTitle>

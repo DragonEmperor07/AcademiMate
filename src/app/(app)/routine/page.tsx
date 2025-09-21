@@ -1,23 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Wand2 } from "lucide-react";
 import { getRoutine } from "@/lib/actions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getClasses } from "@/lib/class-data";
 
 export default function RoutinePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const [studentProfile, setStudentProfile] = useState({
+    classSchedule: "No classes today",
+    freeTimeAvailable: "All day",
+    studentInterests: "",
+    studentStrengths: "",
+    careerGoals: "",
+  });
 
-  const studentProfile = {
-    classSchedule: "Math (9-10 AM), Physics (11-12 PM), Literature (2-3 PM)",
-    freeTimeAvailable: "2 hours in the morning, 1 hour in the afternoon",
-    studentInterests: "Programming, AI, Space Exploration",
-    studentStrengths: "Problem-solving, Creative Thinking, Mathematics",
-    careerGoals: "Software Engineer at a top tech company, focusing on AI development.",
-  };
+  useEffect(() => {
+    const studentId = localStorage.getItem("loggedInUserId");
+    const storedProfile = studentId ? localStorage.getItem(`profile_${studentId}`) : null;
+    const classes = getClasses();
+    const classSchedule = classes.length > 0 
+      ? classes.map(c => `${c.subject} (${c.time})`).join(', ') 
+      : "No classes scheduled for today.";
+
+    if (storedProfile) {
+      const parsedProfile = JSON.parse(storedProfile);
+      setStudentProfile({
+        classSchedule: classSchedule,
+        freeTimeAvailable: "2 hours in the morning, 1 hour in the afternoon", // This could be calculated
+        studentInterests: parsedProfile.interests,
+        studentStrengths: parsedProfile.strengths,
+        careerGoals: parsedProfile.careerGoals,
+      });
+    } else {
+        setStudentProfile(prev => ({ ...prev, classSchedule: classSchedule }));
+    }
+  }, []);
+
 
   async function handleGenerate() {
     setLoading(true);
@@ -55,11 +78,11 @@ export default function RoutinePage() {
               </div>
                <div>
                 <h4 className="font-semibold">Interests</h4>
-                <p className="text-muted-foreground">{studentProfile.studentInterests}</p>
+                <p className="text-muted-foreground">{studentProfile.studentInterests || 'Not set'}</p>
               </div>
               <div>
                 <h4 className="font-semibold">Career Goals</h4>
-                <p className="text-muted-foreground">{studentProfile.careerGoals}</p>
+                <p className="text-muted-foreground">{studentProfile.careerGoals || 'Not set'}</p>
               </div>
                <Button onClick={handleGenerate} disabled={loading} className="w-full">
                 {loading ? (
