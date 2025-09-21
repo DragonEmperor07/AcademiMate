@@ -226,7 +226,7 @@ export default function DashboardPage() {
               <p className="text-muted-foreground max-w-sm">
                 Scan the QR code in your classroom to automatically mark your attendance for the current period.
               </p>
-              <Button size="lg" onClick={handleScan} disabled={!hasCameraPermission || loggedInStudent?.status === 'Present'}>
+              <Button size="lg" onClick={handleScan} disabled={loggedInStudent?.status === 'Present'}>
                 <Camera className="mr-2 h-5 w-5" />
                 {loggedInStudent?.status === 'Present' ? 'Attendance Marked' : 'Simulate Scan'}
               </Button>
