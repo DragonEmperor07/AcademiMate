@@ -58,7 +58,11 @@ export function subscribe(callback: () => void) {
 }
 
 export function getClasses() {
-    return classes;
+    return classes.sort((a, b) => {
+        const timeA = parseTime(a.time)[0];
+        const timeB = parseTime(b.time)[0];
+        return timeA.getTime() - timeB.getTime();
+    });
 }
 
 export function addClass(newClass: Class) {
@@ -73,17 +77,12 @@ export function removeClass(classCode: string) {
 }
 
 export const getCurrentClass = () => {
-    return classes.find(c => c.status === 'In Progress');
+    return getClasses().find(c => c.status === 'In Progress');
 }
 
 export const getNextClass = () => {
-    const upcomingClasses = classes
-        .filter(c => c.status === 'Upcoming')
-        .sort((a, b) => {
-            const timeA = parseTime(a.time)[0];
-            const timeB = parseTime(b.time)[0];
-            return timeA.getTime() - timeB.getTime();
-        });
+    const upcomingClasses = getClasses()
+        .filter(c => c.status === 'Upcoming');
     return upcomingClasses[0];
 }
 
@@ -125,8 +124,9 @@ export function updateClassStatuses() {
     const now = new Date();
     let changed = false;
     let wasNewClassInProgress = false;
+    const currentInProgressClass = getCurrentClass();
 
-    classes.forEach(classItem => {
+    getClasses().forEach(classItem => {
         const [startTime, endTime] = parseTime(classItem.time);
         const oldStatus = classItem.status;
         let newStatus: Class['status'] = 'Upcoming';
@@ -140,13 +140,18 @@ export function updateClassStatuses() {
         }
         
         if (oldStatus !== newStatus) {
-            classItem.status = newStatus;
-            changed = true;
-            if (newStatus === 'In Progress' && oldStatus !== 'In Progress') {
-                wasNewClassInProgress = true;
+            const classToUpdate = classes.find(c => c.code === classItem.code);
+            if (classToUpdate) {
+                classToUpdate.status = newStatus;
+                changed = true;
             }
         }
     });
+
+    const newInProgressClass = getCurrentClass();
+    if (newInProgressClass && newInProgressClass.code !== currentInProgressClass?.code) {
+        wasNewClassInProgress = true;
+    }
 
     if (wasNewClassInProgress) {
         resetAllStudentStatuses();

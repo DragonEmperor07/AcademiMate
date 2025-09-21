@@ -75,12 +75,16 @@ export default function ClassesPage() {
 
   useEffect(() => {
     updateClassStatuses();
+    setClasses([...getClasses()]);
     
     const unsubscribe = subscribe(() => {
       setClasses([...getClasses()]);
     });
 
-    const intervalId = setInterval(updateClassStatuses, 60000);
+    const intervalId = setInterval(() => {
+        updateClassStatuses();
+        setClasses([...getClasses()]);
+    }, 60000);
 
     return () => {
       unsubscribe();
