@@ -23,16 +23,19 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { AppHeader } from "@/components/app-header";
 import { AppLogo } from "@/components/app-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getStudentById } from "@/lib/student-data";
+import { cn } from "@/lib/utils";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+function UserProfile() {
+  const { state } = useSidebar();
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [user, setUser] = React.useState<any>(null);
+  const pathname = usePathname();
 
   React.useEffect(() => {
     const role = localStorage.getItem("loggedInUserRole");
@@ -46,13 +49,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [pathname]);
 
-  const isActive = (path: string) => {
-    return pathname === path;
-  };
-  
-  const isStaff = userRole === 'staff';
-  const isStudent = userRole === 'student';
-
   const getInitials = (name: string) => {
     if (!name) return "";
     const nameParts = name.split(" ");
@@ -61,6 +57,60 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
     return name[0];
   };
+  
+  const isStaff = userRole === 'staff';
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3",
+        state === "collapsed" && "justify-center"
+      )}
+    >
+      <Avatar className="h-9 w-9">
+        <AvatarImage
+          src={
+            isStaff
+              ? "https://picsum.photos/seed/2/100/100"
+              : "https://picsum.photos/seed/1/100/100"
+          }
+          alt="Avatar"
+          data-ai-hint="person avatar"
+        />
+        <AvatarFallback>{user ? getInitials(user.name) : ""}</AvatarFallback>
+      </Avatar>
+      <div
+        className={cn(
+          "flex flex-col",
+          state === "collapsed" && "hidden"
+        )}
+      >
+        <span className="text-sm font-medium">
+          {user ? user.name : "Loading..."}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {isStaff ? "Staff" : "Student"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const role = localStorage.getItem("loggedInUserRole");
+    setUserRole(role);
+  }, [pathname]);
+
+  const isActive = (path: string) => {
+    return pathname === path;
+  };
+  
+  const isStaff = userRole === 'staff';
+  const isStudent = userRole === 'student';
 
   return (
     <SidebarProvider>
@@ -80,7 +130,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href="/dashboard">
                       <LayoutDashboard />
-                      <span>Dashboard</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -92,7 +142,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href="/classes">
                       <BookCopy />
-                      <span>Classes</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Classes</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -104,7 +154,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href="/profile">
                       <UserCircle />
-                      <span>My Profile</span>
+                      <span className="group-data-[collapsible=icon]:hidden">My Profile</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -116,7 +166,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href="/routine">
                       <CalendarClock />
-                      <span>Daily Routine</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Daily Routine</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -128,7 +178,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href="/suggestions">
                       <Lightbulb />
-                      <span>Task Suggestions</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Task Suggestions</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -144,7 +194,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href="/dashboard">
                       <LayoutDashboard />
-                      <span>Dashboard</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -156,7 +206,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href="/attendance">
                       <ClipboardCheck />
-                      <span>Attendance</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Attendance</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -168,7 +218,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <Link href="/classes">
                       <BookCopy />
-                      <span>Classes</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Classes</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -177,22 +227,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-           <div className="flex items-center gap-3">
-             <Avatar className="h-9 w-9">
-                <AvatarImage src={isStaff ? "https://picsum.photos/seed/2/100/100" : "https://picsum.photos/seed/1/100/100"} alt="Avatar" data-ai-hint="person avatar" />
-                <AvatarFallback>{user ? getInitials(user.name) : ""}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                  <span className="text-sm font-medium">{user ? user.name : "Loading..."}</span>
-                  <span className="text-xs text-muted-foreground">{isStaff ? "Staff" : "Student"}</span>
-              </div>
-          </div>
+           <UserProfile />
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Log Out">
                 <Link href="/">
                   <LogOut />
-                  <span>Log Out</span>
+                  <span className="group-data-[collapsible=icon]:hidden">Log Out</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
