@@ -27,7 +27,7 @@ import { students } from "@/lib/student-data";
 const initialAttendanceData = students.map(({ name, id, status }) => ({
   name,
   id,
-  status: status || 'Absent'
+  status: status,
 }));
 
 
