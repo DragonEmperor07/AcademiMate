@@ -24,7 +24,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [studentId, setStudentId] = useState("");
+  const [id, setId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -39,7 +39,7 @@ export default function LoginPage() {
     setError("");
 
     if (isStudent) {
-      if (validateStudent(studentId, password)) {
+      if (validateStudent(id, password)) {
         router.push(dashboardPath);
       } else {
         setError("Invalid Student ID or password.");
@@ -50,8 +50,17 @@ export default function LoginPage() {
         });
       }
     } else {
-      // For now, staff login is automatic
-      router.push(dashboardPath);
+      // Staff login
+      if (id === "staff@school.com" && password === "password") {
+        router.push(dashboardPath);
+      } else {
+        setError("Invalid staff credentials.");
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "Invalid staff credentials.",
+        });
+      }
     }
   };
 
@@ -91,12 +100,11 @@ export default function LoginPage() {
                   id={isStudent ? "studentId" : "email"}
                   type={isStudent ? "text" : "email"}
                   placeholder={
-                    isStudent ? "e.g. S010" : "name@example.com"
+                    isStudent ? "e.g. S010" : "staff@school.com"
                   }
                   required
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                  disabled={!isStudent}
+                  value={id}
+                  onChange={(e) => setId(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -109,7 +117,6 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={!isStudent}
                 />
               </div>
               <Button type="submit" className="w-full">
