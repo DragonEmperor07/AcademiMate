@@ -18,13 +18,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -39,10 +32,6 @@ const getStatusVariant = (status: string) => {
   }
 };
 
-const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
-const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
-const meridiems = ["AM", "PM"];
-
 export default function ClassesPage() {
   const [classes, setClasses] = useState(getClasses());
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -51,14 +40,8 @@ export default function ClassesPage() {
   const [newClassCode, setNewClassCode] = useState("");
   const [newClassRoom, setNewClassRoom] = useState("");
   const [newClassInstructor, setNewClassInstructor] = useState("");
-
-  // State for new class time components
-  const [startHour, setStartHour] = useState("");
-  const [startMinute, setStartMinute] = useState("");
-  const [startMeridiem, setStartMeridiem] = useState("");
-  const [endHour, setEndHour] = useState("");
-  const [endMinute, setEndMinute] = useState("");
-  const [endMeridiem, setEndMeridiem] = useState("");
+  const [newClassStartTime, setNewClassStartTime] = useState("");
+  const [newClassEndTime, setNewClassEndTime] = useState("");
 
 
   useEffect(() => {
@@ -90,23 +73,16 @@ export default function ClassesPage() {
     setNewClassCode("");
     setNewClassRoom("");
     setNewClassInstructor("");
-    setStartHour("");
-    setStartMinute("");
-    setStartMeridiem("");
-    setEndHour("");
-    setEndMinute("");
-    setEndMeridiem("");
+    setNewClassStartTime("");
+    setNewClassEndTime("");
   }
 
   const handleAddClass = () => {
-    const startTime = `${startHour}:${startMinute} ${startMeridiem}`;
-    const endTime = `${endHour}:${endMinute} ${endMeridiem}`;
-    
-    if (newClassSubject && newClassCode && startHour && startMinute && startMeridiem && endHour && endMinute && endMeridiem && newClassRoom && newClassInstructor) {
+    if (newClassSubject && newClassCode && newClassStartTime && newClassEndTime && newClassRoom && newClassInstructor) {
       addClass({
         subject: newClassSubject,
         code: newClassCode,
-        time: `${startTime} - ${endTime}`,
+        time: `${newClassStartTime} - ${newClassEndTime}`,
         room: newClassRoom,
         instructor: newClassInstructor,
         status: "Upcoming",
@@ -153,54 +129,16 @@ export default function ClassesPage() {
                   <Input id="code" value={newClassCode} onChange={(e) => setNewClassCode(e.target.value)} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">
-                    Start Time
-                  </Label>
-                  <div className="col-span-3 grid grid-cols-3 gap-2">
-                     <Select value={startHour} onValueChange={setStartHour}>
-                        <SelectTrigger><SelectValue placeholder="Hour" /></SelectTrigger>
-                        <SelectContent>
-                          {hours.map(h => <SelectItem key={`start-h-${h}`} value={h}>{h}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Select value={startMinute} onValueChange={setStartMinute}>
-                        <SelectTrigger><SelectValue placeholder="Min" /></SelectTrigger>
-                        <SelectContent>
-                          {minutes.map(m => <SelectItem key={`start-m-${m}`} value={m}>{m}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Select value={startMeridiem} onValueChange={setStartMeridiem}>
-                        <SelectTrigger><SelectValue placeholder="AM/PM" /></SelectTrigger>
-                        <SelectContent>
-                          {meridiems.map(m => <SelectItem key={`start-p-${m}`} value={m}>{m}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                  </div>
+                    <Label htmlFor="start-time" className="text-right">
+                        Start Time
+                    </Label>
+                    <Input id="start-time" value={newClassStartTime} onChange={(e) => setNewClassStartTime(e.target.value)} className="col-span-3" placeholder="e.g., 09:00 AM" />
                 </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">
-                    End Time
-                  </Label>
-                   <div className="col-span-3 grid grid-cols-3 gap-2">
-                     <Select value={endHour} onValueChange={setEndHour}>
-                        <SelectTrigger><SelectValue placeholder="Hour" /></SelectTrigger>
-                        <SelectContent>
-                          {hours.map(h => <SelectItem key={`end-h-${h}`} value={h}>{h}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Select value={endMinute} onValueChange={setEndMinute}>
-                        <SelectTrigger><SelectValue placeholder="Min" /></SelectTrigger>
-                        <SelectContent>
-                          {minutes.map(m => <SelectItem key={`end-m-${m}`} value={m}>{m}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Select value={endMeridiem} onValueChange={setEndMeridiem}>
-                        <SelectTrigger><SelectValue placeholder="AM/PM" /></SelectTrigger>
-                        <SelectContent>
-                          {meridiems.map(m => <SelectItem key={`end-p-${m}`} value={m}>{m}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                  </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="end-time" className="text-right">
+                        End Time
+                    </Label>
+                    <Input id="end-time" value={newClassEndTime} onChange={(e) => setNewClassEndTime(e.target.value)} className="col-span-3" placeholder="e.g., 10:00 AM" />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="room" className="text-right">
