@@ -39,23 +39,9 @@ const getStatusVariant = (status: string) => {
   }
 };
 
-const generateTimeSlots = () => {
-  const slots = [];
-  for (let i = 7; i <= 22; i++) {
-    const hour = i > 12 ? i - 12 : i === 0 ? 12 : i;
-    const ampm = i < 12 || i === 24 ? "AM" : "PM";
-    const displayHour = hour < 10 ? `0${hour}` : hour;
-
-    slots.push(`${displayHour}:00 ${ampm}`);
-    if (i < 22) {
-      slots.push(`${displayHour}:30 ${ampm}`);
-    }
-  }
-  return slots;
-};
-
-const timeSlots = generateTimeSlots();
-
+const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+const meridiems = ["AM", "PM"];
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState(getClasses());
@@ -63,10 +49,17 @@ export default function ClassesPage() {
 
   const [newClassSubject, setNewClassSubject] = useState("");
   const [newClassCode, setNewClassCode] = useState("");
-  const [newClassStartTime, setNewClassStartTime] = useState("");
-  const [newClassEndTime, setNewClassEndTime] = useState("");
   const [newClassRoom, setNewClassRoom] = useState("");
   const [newClassInstructor, setNewClassInstructor] = useState("");
+
+  // State for new class time components
+  const [startHour, setStartHour] = useState("");
+  const [startMinute, setStartMinute] = useState("");
+  const [startMeridiem, setStartMeridiem] = useState("");
+  const [endHour, setEndHour] = useState("");
+  const [endMinute, setEndMinute] = useState("");
+  const [endMeridiem, setEndMeridiem] = useState("");
+
 
   useEffect(() => {
     const role = localStorage.getItem("loggedInUserRole");
@@ -92,22 +85,33 @@ export default function ClassesPage() {
     };
   }, []);
 
+  const resetForm = () => {
+    setNewClassSubject("");
+    setNewClassCode("");
+    setNewClassRoom("");
+    setNewClassInstructor("");
+    setStartHour("");
+    setStartMinute("");
+    setStartMeridiem("");
+    setEndHour("");
+    setEndMinute("");
+    setEndMeridiem("");
+  }
+
   const handleAddClass = () => {
-    if (newClassSubject && newClassCode && newClassStartTime && newClassEndTime && newClassRoom && newClassInstructor) {
+    const startTime = `${startHour}:${startMinute} ${startMeridiem}`;
+    const endTime = `${endHour}:${endMinute} ${endMeridiem}`;
+    
+    if (newClassSubject && newClassCode && startHour && startMinute && startMeridiem && endHour && endMinute && endMeridiem && newClassRoom && newClassInstructor) {
       addClass({
         subject: newClassSubject,
         code: newClassCode,
-        time: `${newClassStartTime} - ${newClassEndTime}`,
+        time: `${startTime} - ${endTime}`,
         room: newClassRoom,
         instructor: newClassInstructor,
         status: "Upcoming",
       });
-      setNewClassSubject("");
-      setNewClassCode("");
-      setNewClassStartTime("");
-      setNewClassEndTime("");
-      setNewClassRoom("");
-      setNewClassInstructor("");
+      resetForm();
     }
   };
 
@@ -131,7 +135,7 @@ export default function ClassesPage() {
                 Add Class
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[525px]">
               <DialogHeader>
                 <DialogTitle>Add a New Class</DialogTitle>
               </DialogHeader>
@@ -149,38 +153,54 @@ export default function ClassesPage() {
                   <Input id="code" value={newClassCode} onChange={(e) => setNewClassCode(e.target.value)} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="start-time" className="text-right">
+                  <Label className="text-right">
                     Start Time
                   </Label>
-                  <Select value={newClassStartTime} onValueChange={setNewClassStartTime}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select a start time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((slot) => (
-                        <SelectItem key={`start-${slot}`} value={slot}>
-                          {slot}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="col-span-3 grid grid-cols-3 gap-2">
+                     <Select value={startHour} onValueChange={setStartHour}>
+                        <SelectTrigger><SelectValue placeholder="Hour" /></SelectTrigger>
+                        <SelectContent>
+                          {hours.map(h => <SelectItem key={`start-h-${h}`} value={h}>{h}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={startMinute} onValueChange={setStartMinute}>
+                        <SelectTrigger><SelectValue placeholder="Min" /></SelectTrigger>
+                        <SelectContent>
+                          {minutes.map(m => <SelectItem key={`start-m-${m}`} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={startMeridiem} onValueChange={setStartMeridiem}>
+                        <SelectTrigger><SelectValue placeholder="AM/PM" /></SelectTrigger>
+                        <SelectContent>
+                          {meridiems.map(m => <SelectItem key={`start-p-${m}`} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                  </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="end-time" className="text-right">
+                  <Label className="text-right">
                     End Time
                   </Label>
-                  <Select value={newClassEndTime} onValueChange={setNewClassEndTime}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select an end time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((slot) => (
-                        <SelectItem key={`end-${slot}`} value={slot}>
-                          {slot}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                   <div className="col-span-3 grid grid-cols-3 gap-2">
+                     <Select value={endHour} onValueChange={setEndHour}>
+                        <SelectTrigger><SelectValue placeholder="Hour" /></SelectTrigger>
+                        <SelectContent>
+                          {hours.map(h => <SelectItem key={`end-h-${h}`} value={h}>{h}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={endMinute} onValueChange={setEndMinute}>
+                        <SelectTrigger><SelectValue placeholder="Min" /></SelectTrigger>
+                        <SelectContent>
+                          {minutes.map(m => <SelectItem key={`end-m-${m}`} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={endMeridiem} onValueChange={setEndMeridiem}>
+                        <SelectTrigger><SelectValue placeholder="AM/PM" /></SelectTrigger>
+                        <SelectContent>
+                          {meridiems.map(m => <SelectItem key={`end-p-${m}`} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                  </div>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="room" className="text-right">
@@ -197,7 +217,7 @@ export default function ClassesPage() {
               </div>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button type="button" variant="secondary">
+                  <Button type="button" variant="secondary" onClick={resetForm}>
                     Cancel
                   </Button>
                 </DialogClose>
