@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getStudentById, updateStudentStatus, getStudents, subscribe } from "@/lib/student-data";
-import { getNextClass, getCurrentClass, subscribe as subscribeToClasses, getClasses } from "@/lib/class-data";
+import { getNextClass, getCurrentClass, subscribe as subscribeToClasses, getClasses, Class } from "@/lib/class-data";
 
 const videoConstraints = {
   facingMode: "environment",
@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const webcamRef = useRef<Webcam>(null);
   const [students, setStudents] = useState(getStudents());
   const [currentTime, setCurrentTime] = useState("");
+  const [allClasses, setAllClasses] = useState<Class[]>(getClasses());
   const [nextClass, setNextClass] = useState(getNextClass());
   const [currentClass, setCurrentClass] = useState(getCurrentClass());
 
@@ -81,6 +82,7 @@ export default function DashboardPage() {
     });
 
     const unsubscribeClasses = subscribeToClasses(() => {
+        setAllClasses([...getClasses()]);
         setNextClass(getNextClass());
         setCurrentClass(getCurrentClass());
     });
@@ -122,6 +124,9 @@ export default function DashboardPage() {
     }
     return 'Welcome Back!';
   }
+
+  const completedClassesCount = allClasses.filter(c => c.status === 'Completed').length;
+  const totalClassesCount = allClasses.length;
 
   return (
     <div className="space-y-8">
@@ -174,12 +179,12 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Completed Tasks
+              Completed Classes
             </CardTitle>
             <BarChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3/5 Today</div>
+            <div className="text-2xl font-bold">{completedClassesCount}/{totalClassesCount} Today</div>
             <p className="text-xs text-muted-foreground">Keep up the good work!</p>
           </CardContent>
         </Card>
