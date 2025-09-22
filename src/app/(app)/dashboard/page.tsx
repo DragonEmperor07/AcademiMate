@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { BarChart, Clock, ScanLine, TrendingUp, Camera, CameraOff } from "lucide-react";
-import { Html5QrcodeScanner, Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
