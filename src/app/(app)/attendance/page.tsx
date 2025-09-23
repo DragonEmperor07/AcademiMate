@@ -41,6 +41,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Image from "next/image";
 
 
 export default function AttendancePage() {
@@ -147,6 +148,21 @@ export default function AttendancePage() {
     (s) => s.status === "Present"
   ).length;
   const totalCount = attendanceData.length;
+  
+  const captureAndSaveFace = (studentId: string, videoElement: HTMLVideoElement | null) => {
+      if (!videoElement) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = videoElement.videoWidth;
+      canvas.height = videoElement.videoHeight;
+      const context = canvas.getContext('2d');
+      if(context) {
+        context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        localStorage.setItem(`face_image_${studentId}`, dataUrl);
+        localStorage.setItem(`face_registered_${studentId}`, 'true');
+      }
+  }
 
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,7 +174,7 @@ export default function AttendancePage() {
         password: 'password'
       };
       addStudent(newStudent);
-      localStorage.setItem(`face_registered_${newStudentId}`, 'true');
+      captureAndSaveFace(newStudentId, addStudentVideoRef.current);
       toast({
         title: "Student Added",
         description: `${newStudentName} has been added and their face has been registered.`,
@@ -279,10 +295,16 @@ export default function AttendancePage() {
       if (registeredAbsentStudents.length > 0) {
         // Pick a random registered student to simulate a successful scan
         const randomStudent = registeredAbsentStudents[Math.floor(Math.random() * registeredAbsentStudents.length)];
+        const studentImage = localStorage.getItem(`face_image_${randomStudent.id}`);
         updateStudentStatus(randomStudent.id, 'Present', currentClass.code);
         toast({
           title: "Face Recognized!",
-          description: `AI matched ${randomStudent.name} and marked them as present.`,
+          description: (
+             <div className="flex items-center gap-4">
+                {studentImage && <Image src={studentImage} alt="recognized student" width={40} height={40} className="rounded-full" />}
+                <span>AI matched {randomStudent.name} and marked them as present.</span>
+             </div>
+          ),
         });
       } else if (absentStudents.length > 0) {
         toast({
@@ -371,7 +393,7 @@ export default function AttendancePage() {
                         Enter the student's details and capture their photo for facial recognition.
                       </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleAddStudent} className="grid gap-4 overflow-y-auto px-1 py-4">
+                     <form id="add-student-form" onSubmit={handleAddStudent} className="grid gap-4 overflow-y-auto px-1 py-4">
                         <div className="space-y-2">
                           <Label htmlFor="student-name">Student Name</Label>
                           <Input
@@ -403,13 +425,12 @@ export default function AttendancePage() {
                               </div>
                               <p className="text-xs text-muted-foreground text-center">Position the student's face in the frame.</p>
                         </div>
-                        <Button type="submit" className="hidden" id="hidden-submit"/>
                     </form>
                     <DialogFooter className="border-t pt-4">
                         <DialogClose asChild>
                           <Button type="button" variant="secondary">Cancel</Button>
                         </DialogClose>
-                        <Button type="submit" form="add-student-form" onClick={() => document.getElementById('hidden-submit')?.click()}>
+                        <Button type="submit" form="add-student-form" >
                           <UserPlus className="mr-2 h-4 w-4" />
                           Save Student
                         </Button>
@@ -584,3 +605,4 @@ export default function AttendancePage() {
     </div>
   );
 }
+

@@ -48,6 +48,7 @@ export default function ProfilePage() {
   });
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isFaceRegistered, setIsFaceRegistered] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -72,9 +73,7 @@ export default function ProfilePage() {
     
     // Cleanup camera stream on unmount
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
 
   }, []);
@@ -90,15 +89,15 @@ export default function ProfilePage() {
   }, [profileData, form]);
 
   async function requestCamera() {
-      if (hasCameraPermission) return true;
+      if (isCameraOn) return;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
+        setIsCameraOn(true);
         streamRef.current = stream;
         if (videoRef.current) {
             videoRef.current.srcObject = stream;
         }
-        return true;
       } catch (error) {
         console.error("Error accessing camera:", error);
         setHasCameraPermission(false);
@@ -107,7 +106,6 @@ export default function ProfilePage() {
           title: 'Camera Access Denied',
           description: 'Please enable camera permissions in your browser settings.',
         });
-        return false;
       }
   }
 
@@ -116,21 +114,31 @@ export default function ProfilePage() {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
         if(videoRef.current) videoRef.current.srcObject = null;
-        setHasCameraPermission(null); // Reset permission state to allow re-requesting
+        setHasCameraPermission(null);
+        setIsCameraOn(false);
       }
   }
 
   function handleRegisterFace() {
-    // Simulate capturing and registering face
-    setIsFaceRegistered(true);
-    if(student) {
+    if (student && videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        localStorage.setItem(`face_image_${student.id}`, dataUrl);
         localStorage.setItem(`face_registered_${student.id}`, 'true');
+        
+        setIsFaceRegistered(true);
+        stopCamera();
+        toast({
+            title: "Face Registered!",
+            description: "Your face has been successfully registered for attendance.",
+        });
+      }
     }
-    stopCamera();
-    toast({
-        title: "Face Registered!",
-        description: "Your face has been successfully registered for attendance.",
-    });
   }
 
 
@@ -275,7 +283,7 @@ export default function ProfilePage() {
                     <>
                     <div className="relative w-full max-w-sm aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
                         <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                        {hasCameraPermission === false && (
+                        {hasCameraPermission === false && !isCameraOn && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 text-muted-foreground">
                                 <CameraOff className="h-16 w-16 mb-4"/>
                                 <Alert variant="destructive" className="items-center">
@@ -286,7 +294,7 @@ export default function ProfilePage() {
                                 </Alert>
                             </div>
                         )}
-                        {!hasCameraPermission && (
+                        {!isCameraOn && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
                                 <UserCheck className="h-16 w-16 mb-4 text-muted-foreground"/>
                                 <p className="text-muted-foreground">Enable your camera to begin</p>
@@ -294,7 +302,7 @@ export default function ProfilePage() {
                         )}
                     </div>
                     
-                    {!hasCameraPermission ? (
+                    {!isCameraOn ? (
                         <Button size="lg" onClick={requestCamera}>
                             <Camera className="mr-2 h-5 w-5" />
                             Enable Camera
