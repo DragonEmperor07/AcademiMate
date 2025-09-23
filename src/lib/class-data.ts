@@ -1,6 +1,6 @@
 import { resetAllStudentStatuses } from "./student-data";
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 
 export type Class = {
   time: string;
@@ -44,11 +44,20 @@ export function getClasses() {
 }
 
 export async function addClass(newClass: Omit<Class, 'status'>) {
-  const classWithStatus: Class = { ...newClass, status: "Upcoming" };
-  const classDocRef = doc(db, 'classes', newClass.code);
-  await setDoc(classDocRef, classWithStatus);
-  updateClassStatuses();
+    const timeParts = newClass.time.split(' - ');
+    const formattedStartTime = formatTime(timeParts[0]);
+    const formattedEndTime = formatTime(timeParts[1]);
+
+    const classWithStatus: Class = { 
+        ...newClass, 
+        time: `${formattedStartTime} - ${formattedEndTime}`,
+        status: "Upcoming" 
+    };
+    const classDocRef = doc(db, 'classes', newClass.code);
+    await setDoc(classDocRef, classWithStatus);
+    updateClassStatuses(true);
 }
+
 
 export async function removeClass(classCode: string) {
   const classDocRef = doc(db, 'classes', classCode);
@@ -99,12 +108,33 @@ function parseTime(timeString: string): [Date, Date] {
     return [startDate, endDate];
 }
 
-export function updateClassStatuses(forceNotify = false) {
+
+// Helper to format 24-hour time to AM/PM
+function formatTime(time24: string): string {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(':');
+    const h = parseInt(hours, 10);
+    const m = parseInt(minutes, 10);
+
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const formattedHours = h % 12 || 12; // Convert 0 to 12
+    const formattedMinutes = m < 10 ? `0${m}` : m;
+
+    return `${formattedHours}:${formattedMinutes} ${ampm}`;
+}
+
+
+export async function updateClassStatuses(forceNotify = false) {
     const now = new Date();
     let changed = false;
-    const currentInProgressClass = getCurrentClass();
+    const currentInProgressClassCode = getCurrentClass()?.code;
+    const batch = writeBatch(db);
+    let hasUpdates = false;
 
-    getClasses().forEach(classItem => {
+    const querySnapshot = await getDocs(classesCollection);
+
+    querySnapshot.forEach(doc => {
+        const classItem = doc.data() as Class;
         const [startTime, endTime] = parseTime(classItem.time);
         const oldStatus = classItem.status;
         let newStatus: Class['status'] = 'Upcoming';
@@ -118,19 +148,22 @@ export function updateClassStatuses(forceNotify = false) {
         }
         
         if (oldStatus !== newStatus) {
-            const classToUpdate = classes.find(c => c.code === classItem.code);
-            if (classToUpdate) {
-                classToUpdate.status = newStatus;
-                // Note: This only changes local state. A better implementation might update this in Firestore.
-                // For now, we assume time-based status is sufficient.
-                changed = true;
-            }
+            const classDocRef = doc.ref;
+            batch.update(classDocRef, { status: newStatus });
+            hasUpdates = true;
+            changed = true;
         }
     });
 
-    const newInProgressClass = getCurrentClass();
-    if (newInProgressClass && newInProgressClass.code !== currentInProgressClass?.code) {
-        resetAllStudentStatuses();
+    if (hasUpdates) {
+        await batch.commit();
+    }
+
+    const newInProgressClass = classes.find(c => c.status === 'In Progress');
+
+    if (newInProgressClass && newInProgressClass.code !== currentInProgressClassCode) {
+        await resetAllStudentStatuses();
+        changed = true;
     }
 
     if (changed || forceNotify) {
@@ -138,7 +171,8 @@ export function updateClassStatuses(forceNotify = false) {
     }
 }
 
+
 // Set an interval to check class statuses periodically
 setInterval(() => {
     updateClassStatuses();
-}, 60000);
+}, 15000); // Check every 15 seconds

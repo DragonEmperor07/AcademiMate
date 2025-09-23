@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -42,7 +43,7 @@ export default function ClassesPage() {
   const [newClassInstructor, setNewClassInstructor] = useState("");
   const [newClassStartTime, setNewClassStartTime] = useState("");
   const [newClassEndTime, setNewClassEndTime] = useState("");
-
+  const { toast } = useToast();
 
   useEffect(() => {
     const role = localStorage.getItem("loggedInUserRole");
@@ -68,9 +69,9 @@ export default function ClassesPage() {
     setNewClassEndTime("");
   }
 
-  const handleAddClass = () => {
+  const handleAddClass = async () => {
     if (newClassSubject && newClassCode && newClassStartTime && newClassEndTime && newClassRoom && newClassInstructor) {
-      addClass({
+      await addClass({
         subject: newClassSubject,
         code: newClassCode,
         time: `${newClassStartTime} - ${newClassEndTime}`,
@@ -78,6 +79,16 @@ export default function ClassesPage() {
         instructor: newClassInstructor,
       });
       resetForm();
+      toast({
+        title: "Class Added!",
+        description: `The class '${newClassSubject}' has been successfully added to the schedule.`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please fill out all fields to add a new class.",
+      });
     }
   };
 
@@ -94,7 +105,7 @@ export default function ClassesPage() {
         description="Here is your schedule for the day."
       >
         {isStaff && (
-           <Dialog>
+           <Dialog onOpenChange={(isOpen) => { if(!isOpen) resetForm() }}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2" />
@@ -122,13 +133,13 @@ export default function ClassesPage() {
                     <Label htmlFor="start-time" className="text-right">
                         Start Time
                     </Label>
-                    <Input id="start-time" value={newClassStartTime} onChange={(e) => setNewClassStartTime(e.target.value)} className="col-span-3" placeholder="e.g., 09:00 AM" />
+                    <Input id="start-time" type="time" value={newClassStartTime} onChange={(e) => setNewClassStartTime(e.target.value)} className="col-span-3" placeholder="e.g., 09:00 AM" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="end-time" className="text-right">
                         End Time
                     </Label>
-                    <Input id="end-time" value={newClassEndTime} onChange={(e) => setNewClassEndTime(e.target.value)} className="col-span-3" placeholder="e.g., 10:00 AM" />
+                    <Input id="end-time" type="time" value={newClassEndTime} onChange={(e) => setNewClassEndTime(e.target.value)} className="col-span-3" placeholder="e.g., 10:00 AM" />
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="room" className="text-right">
@@ -167,7 +178,7 @@ export default function ClassesPage() {
               </div>
                <div className="flex items-center gap-4">
                 <Badge variant={getStatusVariant(classItem.status)}>
-                  {classItem.status}
+                  {classItem.status === 'In Progress' ? 'Ongoing' : classItem.status}
                 </Badge>
                 {isStaff && (
                   <Button variant="ghost" size="icon" onClick={() => handleRemoveClass(classItem.code)}>
@@ -188,6 +199,11 @@ export default function ClassesPage() {
             </CardContent>
           </Card>
         ))}
+        {classes.length === 0 && (
+            <div className="text-center text-muted-foreground py-12">
+                <p>No classes scheduled for today.</p>
+            </div>
+        )}
       </div>
     </div>
   );
