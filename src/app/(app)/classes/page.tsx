@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, PlusCircle, Trash2 } from "lucide-react";
-import { getClasses, subscribe, updateClassStatuses, addClass, removeClass } from "@/lib/class-data";
+import { getClasses, subscribe, addClass, removeClass, Class } from "@/lib/class-data";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,7 +33,7 @@ const getStatusVariant = (status: string) => {
 };
 
 export default function ClassesPage() {
-  const [classes, setClasses] = useState(getClasses());
+  const [classes, setClasses] = useState<Class[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
 
   const [newClassSubject, setNewClassSubject] = useState("");
@@ -50,21 +50,12 @@ export default function ClassesPage() {
   }, []);
 
   useEffect(() => {
-    updateClassStatuses();
-    setClasses([...getClasses()]);
-    
-    const unsubscribe = subscribe(() => {
-      setClasses([...getClasses()]);
+    const unsubscribe = subscribe((allClasses) => {
+      setClasses(allClasses);
     });
-
-    const intervalId = setInterval(() => {
-        updateClassStatuses();
-        setClasses([...getClasses()]);
-    }, 60000);
 
     return () => {
       unsubscribe();
-      clearInterval(intervalId);
     };
   }, []);
 
@@ -85,7 +76,6 @@ export default function ClassesPage() {
         time: `${newClassStartTime} - ${newClassEndTime}`,
         room: newClassRoom,
         instructor: newClassInstructor,
-        status: "Upcoming",
       });
       resetForm();
     }

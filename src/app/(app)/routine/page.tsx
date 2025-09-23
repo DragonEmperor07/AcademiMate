@@ -6,7 +6,7 @@ import { getRoutine } from "@/lib/actions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getClasses, subscribe as subscribeToClasses, updateClassStatuses } from "@/lib/class-data";
+import { getClasses, subscribe as subscribeToClasses, updateClassStatuses, Class } from "@/lib/class-data";
 
 export default function RoutinePage() {
   const [loading, setLoading] = useState(false);
@@ -19,12 +19,10 @@ export default function RoutinePage() {
     careerGoals: "",
   });
 
-  const updateProfile = () => {
+  const updateProfile = (classes: Class[]) => {
     const studentId = localStorage.getItem("loggedInUserId");
     const storedProfile = studentId ? localStorage.getItem(`profile_${studentId}`) : null;
     
-    updateClassStatuses();
-    const classes = getClasses();
     const classSchedule = classes.length > 0 
       ? classes.map(c => `${c.subject} (${c.time}) - ${c.status}`).join('\n') 
       : "No classes scheduled for today.";
@@ -44,19 +42,12 @@ export default function RoutinePage() {
   }
 
   useEffect(() => {
-    updateProfile();
-
-    const unsubscribe = subscribeToClasses(() => {
-      updateProfile();
+    const unsubscribe = subscribeToClasses((allClasses) => {
+      updateProfile(allClasses);
     });
-
-    const intervalId = setInterval(() => {
-      updateProfile();
-    }, 60000); // Update every minute
 
     return () => {
       unsubscribe();
-      clearInterval(intervalId);
     };
   }, []);
 

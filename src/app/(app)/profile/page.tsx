@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getStudentById } from "@/lib/student-data";
+import { getStudentById, Student } from "@/lib/student-data";
 
 const profileSchema = z.object({
   interests: z.string().min(3, "Please list at least one interest."),
@@ -36,7 +36,7 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function ProfilePage() {
-  const [student, setStudent] = useState<any>(null);
+  const [student, setStudent] = useState<Student | null>(null);
   const [profileData, setProfileData] = useState<ProfileFormValues>({
     interests: "Programming, AI, Space Exploration",
     strengths: "Problem-solving, Creative Thinking, Mathematics",
@@ -46,8 +46,9 @@ export default function ProfilePage() {
   useEffect(() => {
     const studentId = localStorage.getItem("loggedInUserId");
     if (studentId) {
-      const studentData = getStudentById(studentId);
-      setStudent(studentData);
+      getStudentById(studentId).then(studentData => {
+        if (studentData) setStudent(studentData);
+      });
 
       const storedProfile = localStorage.getItem(`profile_${studentId}`);
       if (storedProfile) {

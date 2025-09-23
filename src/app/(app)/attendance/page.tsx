@@ -23,21 +23,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
-import { getStudents, updateStudentStatus, addStudent, subscribe } from "@/lib/student-data";
-import { getCurrentClass, subscribe as subscribeToClasses, getClasses } from "@/lib/class-data";
+import { getStudents, updateStudentStatus, addStudent, subscribe, Student } from "@/lib/student-data";
+import { getCurrentClass, subscribe as subscribeToClasses, getClasses, Class } from "@/lib/class-data";
 
 export default function AttendancePage() {
-  const [attendanceData, setAttendanceData] = useState(getStudents());
+  const [attendanceData, setAttendanceData] = useState<Student[]>([]);
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentId, setNewStudentId] = useState("");
-  const [currentClass, setCurrentClass] = useState(getCurrentClass());
+  const [currentClass, setCurrentClass] = useState<Class | undefined>(undefined);
 
   useEffect(() => {
-    const unsubscribe = subscribe(() => {
-      setAttendanceData([...getStudents()]);
+    const unsubscribe = subscribe((students) => {
+      setAttendanceData(students);
     });
-    const unsubscribeClasses = subscribeToClasses(() => {
-      setCurrentClass(getCurrentClass());
+    const unsubscribeClasses = subscribeToClasses((all, current) => {
+      setCurrentClass(current);
     });
     return () => {
       unsubscribe();
@@ -53,10 +53,10 @@ export default function AttendancePage() {
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (newStudentName && newStudentId) {
-      const newStudent = {
+      const newStudent: Student = {
         name: newStudentName,
         id: newStudentId,
-        status: "Absent" as "Absent",
+        status: "Absent",
         password: 'password'
       };
       addStudent(newStudent);

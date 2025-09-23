@@ -28,7 +28,7 @@ import {
 import { AppHeader } from "@/components/app-header";
 import { AppLogo } from "@/components/app-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getStudentById } from "@/lib/student-data";
+import { getStudentById, Student } from "@/lib/student-data";
 import { cn } from "@/lib/utils";
 
 function UserProfile() {
@@ -43,7 +43,9 @@ function UserProfile() {
     setUserRole(role);
 
     if (role === "student" && userId) {
-      setUser(getStudentById(userId));
+      getStudentById(userId).then(studentData => {
+        if (studentData) setUser(studentData);
+      });
     } else if (role === "staff") {
       setUser({ name: "Dr. Alan Grant", initials: "AG" });
     }

@@ -1,4 +1,6 @@
 import { resetAllStudentStatuses } from "./student-data";
+import { db } from './firebase';
+import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export type Class = {
   time: string;
@@ -9,71 +11,48 @@ export type Class = {
   status: "Completed" | "In Progress" | "Upcoming";
 };
 
-export let classes: Class[] = [
-  {
-    time: "09:00 AM - 10:00 AM",
-    subject: "Advanced Mathematics",
-    code: "MTH-302",
-    room: "301",
-    instructor: "Dr. Alan Grant",
-    status: "Upcoming",
-  },
-  {
-    time: "10:00 AM - 11:00 AM",
-    subject: "Quantum Physics",
-    code: "PHY-410",
-    room: "112",
-    instructor: "Dr. Ellie Sattler",
-    status: "Upcoming",
-  },
-  {
-    time: "11:00 AM - 12:00 PM",
-    subject: "Shakespearean Literature",
-    code: "LIT-201",
-    room: "205",
-    instructor: "Dr. Ian Malcolm",
-    status: "Upcoming",
-  },
-  {
-    time: "01:00 PM - 02:00 PM",
-    subject: "Organic Chemistry",
-    code: "CHM-223",
-    room: "Lab 4",
-    instructor: "Dr. Henry Wu",
-    status: "Upcoming",
-  },
-];
+let classes: Class[] = [];
+let listeners: ((classes: Class[], current: Class | undefined, next: Class | undefined) => void)[] = [];
 
-let listeners: (() => void)[] = [];
+const classesCollection = collection(db, 'classes');
+
+onSnapshot(classesCollection, snapshot => {
+  classes = snapshot.docs.map(doc => doc.data() as Class).sort((a, b) => {
+    const timeA = parseTime(a.time)[0];
+    const timeB = parseTime(b.time)[0];
+    return timeA.getTime() - timeB.getTime();
+  });
+  updateClassStatuses(true); // Force update and notify on initial load/change from DB
+});
 
 function notifyListeners() {
-  listeners.forEach(listener => listener());
+  const current = getCurrentClass();
+  const next = getNextClass();
+  listeners.forEach(listener => listener(classes, current, next));
 }
 
-export function subscribe(callback: () => void) {
+export function subscribe(callback: (classes: Class[], current: Class | undefined, next: Class | undefined) => void) {
   listeners.push(callback);
+  callback(classes, getCurrentClass(), getNextClass()); // Immediately send current data
   return function unsubscribe() {
     listeners = listeners.filter(l => l !== callback);
   };
 }
 
 export function getClasses() {
-    return classes.sort((a, b) => {
-        const timeA = parseTime(a.time)[0];
-        const timeB = parseTime(b.time)[0];
-        return timeA.getTime() - timeB.getTime();
-    });
+  return classes;
 }
 
-export function addClass(newClass: Class) {
-  classes.push(newClass);
+export async function addClass(newClass: Omit<Class, 'status'>) {
+  const classWithStatus: Class = { ...newClass, status: "Upcoming" };
+  const classDocRef = doc(db, 'classes', newClass.code);
+  await setDoc(classDocRef, classWithStatus);
   updateClassStatuses();
-  notifyListeners();
 }
 
-export function removeClass(classCode: string) {
-  classes = classes.filter(c => c.code !== classCode);
-  notifyListeners();
+export async function removeClass(classCode: string) {
+  const classDocRef = doc(db, 'classes', classCode);
+  await deleteDoc(classDocRef);
 }
 
 export const getCurrentClass = () => {
@@ -120,10 +99,9 @@ function parseTime(timeString: string): [Date, Date] {
     return [startDate, endDate];
 }
 
-export function updateClassStatuses() {
+export function updateClassStatuses(forceNotify = false) {
     const now = new Date();
     let changed = false;
-    let wasNewClassInProgress = false;
     const currentInProgressClass = getCurrentClass();
 
     getClasses().forEach(classItem => {
@@ -143,6 +121,8 @@ export function updateClassStatuses() {
             const classToUpdate = classes.find(c => c.code === classItem.code);
             if (classToUpdate) {
                 classToUpdate.status = newStatus;
+                // Note: This only changes local state. A better implementation might update this in Firestore.
+                // For now, we assume time-based status is sufficient.
                 changed = true;
             }
         }
@@ -150,12 +130,15 @@ export function updateClassStatuses() {
 
     const newInProgressClass = getCurrentClass();
     if (newInProgressClass && newInProgressClass.code !== currentInProgressClass?.code) {
-        wasNewClassInProgress = true;
+        resetAllStudentStatuses();
     }
 
-    if (wasNewClassInProgress) {
-        resetAllStudentStatuses();
-    } else if (changed) {
+    if (changed || forceNotify) {
         notifyListeners();
     }
 }
+
+// Set an interval to check class statuses periodically
+setInterval(() => {
+    updateClassStatuses();
+}, 60000);

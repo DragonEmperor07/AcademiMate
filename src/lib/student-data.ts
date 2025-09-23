@@ -1,59 +1,78 @@
+import { db } from './firebase';
+import { collection, onSnapshot, doc, updateDoc, getDoc, arrayUnion, setDoc } from 'firebase/firestore';
 
-let students = [
-  { name: 'Liam Johnson', id: 'S001', password: 'password', status: 'Absent' },
-  { name: 'Olivia Smith', id: 'S002', password: 'password', status: 'Absent' },
-  { name: 'Noah Williams', id: 'S003', password: 'password', status: 'Absent' },
-  { name: 'Emma Brown', id: 'S004', password: 'password', status: 'Absent' },
-  { name: 'Oliver Jones', id: 'S005', password: 'password', status: 'Absent' },
-  { name: 'Ava Garcia', id: 'S006', password: 'password', status: 'Absent' },
-  { name: 'Elijah Miller', id: 'S007', password: 'password', status: 'Absent' },
-  { name: 'Charlotte Davis', id: 'S008', password: 'password', status: 'Absent' },
-  { name: 'James Rodriguez', id: 'S009', password: 'password', status: 'Absent' },
-  { name: 'Jane Doe', id: 'S010', password: 'password', status: 'Absent' },
-];
+export type Student = {
+  name: string;
+  id: string;
+  password?: string;
+  status: 'Present' | 'Absent';
+  attendedClasses?: string[];
+};
 
-let listeners: (() => void)[] = [];
+let students: Student[] = [];
+let listeners: ((students: Student[]) => void)[] = [];
+
+const studentsCollection = collection(db, 'students');
+
+onSnapshot(studentsCollection, snapshot => {
+  students = snapshot.docs.map(doc => doc.data() as Student);
+  notifyListeners();
+});
 
 function notifyListeners() {
-  listeners.forEach(listener => listener());
+  listeners.forEach(listener => listener(students));
 }
 
-export function subscribe(callback: () => void) {
+export function subscribe(callback: (students: Student[]) => void) {
   listeners.push(callback);
+  callback(students); // Immediately send current data
   return function unsubscribe() {
     listeners = listeners.filter(l => l !== callback);
   };
 }
 
 export function getStudents() {
-    return students;
+  return students;
 }
 
-export function validateStudent(studentId: string, password_param: string) {
-  const student = students.find(s => s.id === studentId);
-  if (!student) {
+export async function validateStudent(studentId: string, password_param: string) {
+  const studentDocRef = doc(db, 'students', studentId);
+  const studentSnap = await getDoc(studentDocRef);
+  
+  if (!studentSnap.exists()) {
     return false;
   }
+  const student = studentSnap.data() as Student;
   return student.password === password_param;
 }
 
-export function getStudentById(studentId: string) {
-  return students.find(s => s.id === studentId) || null;
+export async function getStudentById(studentId: string): Promise<Student | null> {
+  const studentDocRef = doc(db, 'students', studentId);
+  const studentSnap = await getDoc(studentDocRef);
+  if (studentSnap.exists()) {
+    return studentSnap.data() as Student;
+  }
+  return null;
 }
 
-export function updateStudentStatus(studentId: string, newStatus: 'Present' | 'Absent') {
-  students = students.map(student => 
-    student.id === studentId ? { ...student, status: newStatus } : student
-  );
-  notifyListeners();
+export async function updateStudentStatus(studentId: string, newStatus: 'Present' | 'Absent', classCode?: string) {
+  const studentDocRef = doc(db, 'students', studentId);
+  const updateData: any = { status: newStatus };
+  if (newStatus === 'Present' && classCode) {
+    updateData.attendedClasses = arrayUnion(classCode);
+  }
+  await updateDoc(studentDocRef, updateData);
 }
 
-export function addStudent(student: {name: string, id: string, status: 'Present' | 'Absent', password: string}) {
-    students.push(student);
-    notifyListeners();
+export async function addStudent(student: Student) {
+    const studentDocRef = doc(db, 'students', student.id);
+    await setDoc(studentDocRef, student);
 }
 
-export function resetAllStudentStatuses() {
-    students = students.map(student => ({ ...student, status: 'Absent' }));
-    notifyListeners();
+export async function resetAllStudentStatuses() {
+    const studentPromises = students.map(student => {
+        const studentDocRef = doc(db, 'students', student.id);
+        return updateDoc(studentDocRef, { status: 'Absent' });
+    });
+    await Promise.all(studentPromises);
 }

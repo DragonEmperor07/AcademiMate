@@ -1,37 +1,54 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { BarChart, Clock, ScanLine, TrendingUp, Camera, CameraOff } from "lucide-react";
+import { BarChart, Clock, ScanLine, TrendingUp, Camera, CameraOff, Calendar, Users } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getStudentById, updateStudentStatus, getStudents, subscribe } from "@/lib/student-data";
+import { Progress } from "@/components/ui/progress";
+import { getStudentById, updateStudentStatus, getStudents, subscribe, Student } from "@/lib/student-data";
 import { getNextClass, getCurrentClass, subscribe as subscribeToClasses, getClasses, Class } from "@/lib/class-data";
 
 const videoConstraints = {
   facingMode: "environment",
 };
 
+// Mock data for weather
+const weatherData = {
+  temperature: 30,
+  condition: "Partly Cloudy",
+  icon: "☁️"
+};
+
 export default function DashboardPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [loggedInStudent, setLoggedInStudent] = useState<any>(null);
-  const [students, setStudents] = useState(getStudents());
+  const [loggedInStudent, setLoggedInStudent] = useState<Student | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
   const [currentTime, setCurrentTime] = useState("");
-  const [allClasses, setAllClasses] = useState<Class[]>(getClasses());
-  const [nextClass, setNextClass] = useState(getNextClass());
-  const [currentClass, setCurrentClass] = useState(getCurrentClass());
+  const [currentDate, setCurrentDate] = useState("");
+  const [allClasses, setAllClasses] = useState<Class[]>([]);
+  const [nextClass, setNextClass] = useState<Class | undefined>(undefined);
+  const [currentClass, setCurrentClass] = useState<Class | undefined>(undefined);
   const [isScanning, setIsScanning] = useState(false);
+  const [studentAttendancePercentage, setStudentAttendancePercentage] = useState(0);
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerRegionId = "qr-scanner-region";
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString());
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString());
+      setCurrentDate(now.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -43,8 +60,9 @@ export default function DashboardPage() {
     if (role === 'student') {
       const studentId = localStorage.getItem("loggedInUserId");
       if (studentId) {
-        const student = getStudentById(studentId);
-        setLoggedInStudent(student);
+        getStudentById(studentId).then(student => {
+            if(student) setLoggedInStudent(student);
+        });
       }
     }
     
@@ -57,7 +75,7 @@ export default function DashboardPage() {
         }
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream.getTracks().forEach(track => track.stop()); // Stop stream immediately, we'll start it with the scanner
+          stream.getTracks().forEach(track => track.stop());
           setHasCameraPermission(true);
         } catch (error) {
           console.error("Error accessing camera:", error);
@@ -81,31 +99,47 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-     const unsubscribe = subscribe(() => {
-        setStudents([...getStudents()]);
+     const unsubscribeStudents = subscribe(async (allStudents) => {
+        setStudents(allStudents);
         if (loggedInStudent) {
-            const student = getStudentById(loggedInStudent.id);
-            setLoggedInStudent(student);
+            const student = allStudents.find(s => s.id === loggedInStudent.id);
+            if (student) setLoggedInStudent(student);
         }
     });
 
-    const unsubscribeClasses = subscribeToClasses(() => {
-        setAllClasses([...getClasses()]);
-        setNextClass(getNextClass());
-        setCurrentClass(getCurrentClass());
+    const unsubscribeClasses = subscribeToClasses((all, current, next) => {
+        setAllClasses(all);
+        setCurrentClass(current);
+        setNextClass(next);
     });
 
     return () => {
-        unsubscribe();
+        unsubscribeStudents();
         unsubscribeClasses();
     };
   }, [loggedInStudent]);
+
+  useEffect(() => {
+    const completedClasses = allClasses.filter(c => c.status === 'Completed');
+    if (completedClasses.length === 0 || !loggedInStudent?.attendedClasses) {
+      setStudentAttendancePercentage(0);
+      return;
+    }
+    
+    const attendedCount = loggedInStudent.attendedClasses.filter(classId => 
+      completedClasses.some(c => c.code === classId)
+    ).length;
+    
+    const percentage = Math.round((attendedCount / completedClasses.length) * 100);
+    setStudentAttendancePercentage(percentage);
+
+  }, [loggedInStudent, allClasses]);
 
   const handleScanSuccess = (decodedText: string) => {
     if (loggedInStudent && currentClass) {
       const expectedQrCodeValue = `${currentClass.code}-2024-FALL`;
       if (decodedText === expectedQrCodeValue) {
-        updateStudentStatus(loggedInStudent.id, "Present");
+        updateStudentStatus(loggedInStudent.id, "Present", currentClass.code);
         toast({
           title: "Attendance Marked!",
           description: `You've been successfully marked present for '${currentClass.subject}'.`,
@@ -165,25 +199,19 @@ export default function DashboardPage() {
         })
         .catch(err => {
             console.error("Failed to stop the scanner.", err);
-            setIsScanning(false); // Force state change even on error
+            setIsScanning(false);
         });
     } else {
         setIsScanning(false);
     }
   };
 
-  const attendancePercentage = () => {
-    if (students.length === 0) return 0;
-    const presentCount = students.filter(s => s.status === 'Present').length;
-    return Math.round((presentCount / students.length) * 100);
-  }
-
   const getPageTitle = () => {
     if (userRole === 'staff') {
       return 'Welcome, Staff Member!';
     }
     if (loggedInStudent) {
-      return `Welcome Back, ${loggedInStudent.name.split(' ')[0]}!`;
+      return `Hi ${loggedInStudent.name.split(' ')[0]}!`;
     }
     return 'Welcome Back!';
   }
@@ -192,75 +220,66 @@ export default function DashboardPage() {
   const totalClassesCount = allClasses.length;
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title={getPageTitle()}
-        description="Your academic snapshot for today."
-      />
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Class Attendance Rate
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{attendancePercentage()}%</div>
-            <p className="text-xs text-muted-foreground">
-              {userRole === 'student' && (loggedInStudent?.status === 'Present' ? 'You are marked present' : 'You are marked absent')}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Current Time
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{currentTime || "..."}</div>
-            <p className="text-xs text-muted-foreground">Have a productive day!</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Next Class
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-             <div className="text-2xl font-bold">{nextClass?.time.split(' - ')[0] || 'N/A'}</div>
-            <p className="text-xs text-muted-foreground">
-                {nextClass ? `${nextClass.subject} in Room ${nextClass.room}` : 'No upcoming classes'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Completed Classes
-            </CardTitle>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedClassesCount}/{totalClassesCount} Today</div>
-            <p className="text-xs text-muted-foreground">Keep up the good work!</p>
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      {/* Header with Weather */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">{getPageTitle()}</h1>
+            <p className="text-muted-foreground">{currentDate}</p>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center gap-2">
+              <span className="text-3xl">{weatherData.temperature}°C</span>
+              <span className="text-2xl">{weatherData.icon}</span>
+            </div>
+            <p className="text-muted-foreground">{weatherData.condition}</p>
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <Button variant="outline" className="w-full justify-between">
+            View Schedule
+            <Calendar className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {userRole === 'student' && (
-        <div>
-          <Card className="bg-primary/10 border-primary/20">
+      {/* Essentials Section - Only Attendance */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">ESSENTIALS</h2>
+        <div className="grid gap-4 md:grid-cols-1">
+          {/* Attendance Card */}
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Attendance</CardTitle>
+              <Users className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{studentAttendancePercentage}%</div>
+              <div className="mt-2">
+                <Progress value={studentAttendancePercentage} className="h-2" />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">As on Sep 21, 13:30 PM</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Tools Section */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">TOOLS</h2>
+        
+        {userRole === 'student' && (
+          <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
-              <CardTitle className="font-headline text-xl">Mark Your Attendance</CardTitle>
+              <CardTitle className="font-headline text-xl flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                Mark Your Attendance
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
-               <div className="relative w-full max-w-sm aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
+              <div className="relative w-full max-w-sm aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
                 <div id={scannerRegionId} className="w-full h-full" />
                 {hasCameraPermission === false && (
                   <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
@@ -296,8 +315,46 @@ export default function DashboardPage() {
                )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Additional Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Current Time</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{currentTime || "..."}</div>
+              <p className="text-xs text-muted-foreground">Have a productive day!</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Next Class</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{nextClass?.time.split(' - ')[0] || 'N/A'}</div>
+              <p className="text-xs text-muted-foreground">
+                {nextClass ? `${nextClass.subject} in Room ${nextClass.room}` : 'No upcoming classes'}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completed Classes</CardTitle>
+              <BarChart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{completedClassesCount}/{totalClassesCount} Today</div>
+              <p className="text-xs text-muted-foreground">Keep up the good work!</p>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      </div>
     </div>
   );
 }
