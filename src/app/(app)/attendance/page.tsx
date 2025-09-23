@@ -23,8 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
-import { getStudents, updateStudentStatus, addStudent, subscribe, Student } from "@/lib/student-data";
-import { getCurrentClass, subscribe as subscribeToClasses, getClasses, Class } from "@/lib/class-data";
+import { updateStudentStatus, addStudent, subscribe, Student } from "@/lib/student-data";
+import { subscribe as subscribeToClasses, Class } from "@/lib/class-data";
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState<Student[]>([]);

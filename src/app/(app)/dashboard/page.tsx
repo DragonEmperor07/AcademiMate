@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { getStudentById, updateStudentStatus, getStudents, subscribe, Student } from "@/lib/student-data";
-import { getNextClass, getCurrentClass, subscribe as subscribeToClasses, getClasses, Class } from "@/lib/class-data";
+import { getStudentById, updateStudentStatus, subscribe, Student } from "@/lib/student-data";
+import { subscribe as subscribeToClasses, Class } from "@/lib/class-data";
 
 const videoConstraints = {
   facingMode: "environment",
@@ -381,5 +381,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
