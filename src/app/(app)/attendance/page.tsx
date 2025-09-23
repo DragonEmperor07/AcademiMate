@@ -157,9 +157,10 @@ export default function AttendancePage() {
         password: 'password'
       };
       addStudent(newStudent);
+      localStorage.setItem(`face_registered_${newStudentId}`, 'true');
       toast({
         title: "Student Added",
-        description: `${newStudentName} has been added to the roster.`,
+        description: `${newStudentName} has been added and their face has been registered.`,
       })
       setNewStudentName("");
       setNewStudentId("");
@@ -267,19 +268,30 @@ export default function AttendancePage() {
       }
     }
     
-    // Simulate AI facial recognition
+    // Simulate AI facial recognition matching a registered face
     setTimeout(() => {
       const absentStudents = attendanceData.filter(s => s.status === 'Absent');
-      if (absentStudents.length > 0) {
-        const randomStudent = absentStudents[Math.floor(Math.random() * absentStudents.length)];
+      const registeredAbsentStudents = absentStudents.filter(s => {
+        return localStorage.getItem(`face_registered_${s.id}`) === 'true';
+      });
+
+      if (registeredAbsentStudents.length > 0) {
+        // Pick a random registered student to simulate a successful scan
+        const randomStudent = registeredAbsentStudents[Math.floor(Math.random() * registeredAbsentStudents.length)];
         updateStudentStatus(randomStudent.id, 'Present', currentClass.code);
         toast({
-          title: "Attendance Marked!",
-          description: `AI recognized ${randomStudent.name} and marked them as present.`,
+          title: "Face Recognized!",
+          description: `AI matched ${randomStudent.name} and marked them as present.`,
+        });
+      } else if (absentStudents.length > 0) {
+        toast({
+            variant: "destructive",
+            title: "No Match Found",
+            description: 'Could not find a match. Ensure absent students have registered their face.',
         });
       } else {
         toast({
-            title: "All students present!",
+            title: "All Students Present!",
             description: 'No absent students left to mark.',
         });
       }
@@ -570,5 +582,7 @@ export default function AttendancePage() {
     </div>
   );
 }
+
+    
 
     
