@@ -23,7 +23,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, ShieldAlert, Camera, CameraOff, ScanLine, UserCheck, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { PlusCircle, MoreHorizontal, ShieldAlert, Camera, CameraOff, ScanLine, UserCheck, Loader2, UserPlus } from "lucide-react";
 import { updateStudentStatus, addStudent, subscribe, Student, getStudents } from "@/lib/student-data";
 import { subscribe as subscribeToClasses, Class } from "@/lib/class-data";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -42,8 +52,11 @@ export default function AttendancePage() {
   const [isScanning, setIsScanning] = useState(false);
   const [isFaceScanning, setIsFaceScanning] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isAddStudentDialogOpen, setIsAddStudentDialogOpen] = useState(false);
+
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const addStudentVideoRef = useRef<HTMLVideoElement>(null);
   const scannerRegionId = "qr-scanner-region";
   const { toast } = useToast();
 
@@ -82,8 +95,39 @@ export default function AttendancePage() {
       if (scannerRef.current && scannerRef.current.isScanning) {
         scannerRef.current.stop().catch(err => console.error("Failed to stop scanner on unmount", err));
       }
+      stopCameraStream(addStudentVideoRef);
     };
   }, [toast]);
+  
+  // Handle camera stream for Add Student Dialog
+  useEffect(() => {
+    if (isAddStudentDialogOpen && hasCameraPermission) {
+      startCameraStream(addStudentVideoRef);
+    } else {
+      stopCameraStream(addStudentVideoRef);
+    }
+  }, [isAddStudentDialogOpen, hasCameraPermission]);
+
+
+  const startCameraStream = async (ref: React.RefObject<HTMLVideoElement>) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (ref.current) {
+        ref.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error("Failed to start camera stream:", error);
+    }
+  };
+
+  const stopCameraStream = (ref: React.RefObject<HTMLVideoElement>) => {
+    if (ref.current && ref.current.srcObject) {
+      const stream = ref.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      ref.current.srcObject = null;
+    }
+  };
+
 
   useEffect(() => {
     const unsubscribe = subscribe((students) => {
@@ -113,8 +157,13 @@ export default function AttendancePage() {
         password: 'password'
       };
       addStudent(newStudent);
+      toast({
+        title: "Student Added",
+        description: `${newStudentName} has been added to the roster.`,
+      })
       setNewStudentName("");
       setNewStudentId("");
+      setIsAddStudentDialogOpen(false); // Close dialog on success
     }
   };
 
@@ -293,8 +342,66 @@ export default function AttendancePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle>Student List</CardTitle>
+                <Dialog open={isAddStudentDialogOpen} onOpenChange={setIsAddStudentDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add Student
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[525px]">
+                    <DialogHeader>
+                      <DialogTitle>Add New Student</DialogTitle>
+                      <DialogDescription>
+                        Enter the student's details and capture their photo for facial recognition.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddStudent} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="student-name">Student Name</Label>
+                        <Input
+                          id="student-name"
+                          placeholder="e.g., John Doe"
+                          value={newStudentName}
+                          onChange={(e) => setNewStudentName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="student-id">Student ID</Label>
+                        <Input
+                          id="student-id"
+                          placeholder="e.g., S011"
+                          value={newStudentId}
+                          onChange={(e) => setNewStudentId(e.target.value)}
+                        />
+                      </div>
+                       <div className="space-y-2">
+                          <Label>Student Photo</Label>
+                           <div className="relative w-full aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
+                                <video ref={addStudentVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                {!hasCameraPermission && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 text-muted-foreground">
+                                    <CameraOff className="h-10 w-10 mb-2"/>
+                                    <p>Camera permission not granted.</p>
+                                </div>
+                                )}
+                            </div>
+                            <p className="text-xs text-muted-foreground text-center">Position the student's face in the frame.</p>
+                       </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button type="button" variant="secondary">Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit">
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Save Student
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -357,37 +464,6 @@ export default function AttendancePage() {
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Add New Student</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAddStudent} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="student-name">Student Name</Label>
-                    <Input
-                      id="student-name"
-                      placeholder="e.g., John Doe"
-                      value={newStudentName}
-                      onChange={(e) => setNewStudentName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="student-id">Student ID</Label>
-                    <Input
-                      id="student-id"
-                      placeholder="e.g., S011"
-                      value={newStudentId}
-                      onChange={(e) => setNewStudentId(e.target.value)}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Student
-                  </Button>
-                </form>
               </CardContent>
             </Card>
           </div>
