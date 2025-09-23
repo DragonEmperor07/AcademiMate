@@ -252,25 +252,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Essentials Section */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">ESSENTIALS</h2>
-        <div className="grid gap-4 md:grid-cols-1">
-          {userRole === 'student' && (
-            <Card className="bg-blue-50 border-blue-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">My Attendance</CardTitle>
-                <Users className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{studentAttendancePercentage}%</div>
-                <div className="mt-2">
-                  <Progress value={studentAttendancePercentage} className="h-2" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">Overall attendance in completed classes.</p>
-              </CardContent>
-            </Card>
-          )}
-           {userRole === 'staff' && (
+      {userRole === 'staff' && (
+        <div>
+          <h2 className="text-xl font-bold mb-4">ESSENTIALS</h2>
+          <div className="grid gap-4 md:grid-cols-1">
             <Link href="/attendance">
                 <Card className="bg-blue-50 border-blue-200 hover:bg-blue-100 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -285,9 +270,9 @@ export default function DashboardPage() {
                 </CardContent>
                 </Card>
             </Link>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tools Section */}
       <div>
