@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loggedInStudent, setLoggedInStudent] = useState<Student | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [presentCount, setPresentCount] = useState(0);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   const [allClasses, setAllClasses] = useState<Class[]>([]);
@@ -102,6 +103,7 @@ export default function DashboardPage() {
   useEffect(() => {
      const unsubscribeStudents = subscribe(async (allStudents) => {
         setStudents(allStudents);
+        setPresentCount(allStudents.filter(s => s.status === "Present").length);
         if (loggedInStudent) {
             const student = allStudents.find(s => s.id === loggedInStudent.id);
             if (student) setLoggedInStudent(student);
@@ -121,20 +123,21 @@ export default function DashboardPage() {
   }, [loggedInStudent]);
 
   useEffect(() => {
-    const completedClasses = allClasses.filter(c => c.status === 'Completed');
-    if (completedClasses.length === 0 || !loggedInStudent?.attendedClasses) {
-      setStudentAttendancePercentage(0);
-      return;
+    if (userRole === 'student' && loggedInStudent && allClasses.length > 0) {
+        const completedClasses = allClasses.filter(c => c.status === 'Completed');
+        if (completedClasses.length === 0 || !loggedInStudent.attendedClasses) {
+            setStudentAttendancePercentage(0);
+            return;
+        }
+        
+        const attendedCount = loggedInStudent.attendedClasses.filter(classId => 
+            completedClasses.some(c => c.code === classId)
+        ).length;
+        
+        const percentage = Math.round((attendedCount / completedClasses.length) * 100);
+        setStudentAttendancePercentage(percentage);
     }
-    
-    const attendedCount = loggedInStudent.attendedClasses.filter(classId => 
-      completedClasses.some(c => c.code === classId)
-    ).length;
-    
-    const percentage = Math.round((attendedCount / completedClasses.length) * 100);
-    setStudentAttendancePercentage(percentage);
-
-  }, [loggedInStudent, allClasses]);
+  }, [loggedInStudent, allClasses, userRole]);
 
   const handleScanSuccess = (decodedText: string) => {
     if (loggedInStudent && currentClass) {
@@ -248,24 +251,41 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Essentials Section - Only Attendance */}
+      {/* Essentials Section */}
       <div>
         <h2 className="text-xl font-bold mb-4">ESSENTIALS</h2>
         <div className="grid gap-4 md:grid-cols-1">
-          {/* Attendance Card */}
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Attendance</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{studentAttendancePercentage}%</div>
-              <div className="mt-2">
-                <Progress value={studentAttendancePercentage} className="h-2" />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">As on Sep 21, 13:30 PM</p>
-            </CardContent>
-          </Card>
+          {userRole === 'student' && (
+            <Card className="bg-blue-50 border-blue-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">My Attendance</CardTitle>
+                <Users className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">{studentAttendancePercentage}%</div>
+                <div className="mt-2">
+                  <Progress value={studentAttendancePercentage} className="h-2" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Overall attendance in completed classes.</p>
+              </CardContent>
+            </Card>
+          )}
+           {userRole === 'staff' && (
+            <Link href="/attendance">
+                <Card className="bg-blue-50 border-blue-200 hover:bg-blue-100 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Class Attendance</CardTitle>
+                    <Users className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{presentCount} / {students.length}</div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                    Students present in the current class. Click to view details.
+                    </p>
+                </CardContent>
+                </Card>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -361,3 +381,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
