@@ -40,6 +40,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Html5Qrcode } from "html5-qrcode";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 export default function AttendancePage() {
@@ -363,55 +364,56 @@ export default function AttendancePage() {
                       Add Student
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[525px]">
+                  <DialogContent className="sm:max-w-[525px] grid-rows-[auto_1fr_auto] max-h-[90vh]">
                     <DialogHeader>
                       <DialogTitle>Add New Student</DialogTitle>
                       <DialogDescription>
                         Enter the student's details and capture their photo for facial recognition.
                       </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleAddStudent} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="student-name">Student Name</Label>
-                        <Input
-                          id="student-name"
-                          placeholder="e.g., John Doe"
-                          value={newStudentName}
-                          onChange={(e) => setNewStudentName(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="student-id">Student ID</Label>
-                        <Input
-                          id="student-id"
-                          placeholder="e.g., S011"
-                          value={newStudentId}
-                          onChange={(e) => setNewStudentId(e.target.value)}
-                        />
-                      </div>
-                       <div className="space-y-2">
-                          <Label>Student Photo</Label>
-                           <div className="relative w-full aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
-                                <video ref={addStudentVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                                {!hasCameraPermission && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 text-muted-foreground">
-                                    <CameraOff className="h-10 w-10 mb-2"/>
-                                    <p>Camera permission not granted.</p>
-                                </div>
-                                )}
-                            </div>
-                            <p className="text-xs text-muted-foreground text-center">Position the student's face in the frame.</p>
-                       </div>
-                      <DialogFooter>
-                         <DialogClose asChild>
-                           <Button type="button" variant="secondary">Cancel</Button>
-                         </DialogClose>
-                         <Button type="submit">
-                           <UserPlus className="mr-2 h-4 w-4" />
-                           Save Student
-                         </Button>
-                       </DialogFooter>
+                    <form onSubmit={handleAddStudent} className="grid gap-4 overflow-y-auto px-1 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="student-name">Student Name</Label>
+                          <Input
+                            id="student-name"
+                            placeholder="e.g., John Doe"
+                            value={newStudentName}
+                            onChange={(e) => setNewStudentName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="student-id">Student ID</Label>
+                          <Input
+                            id="student-id"
+                            placeholder="e.g., S011"
+                            value={newStudentId}
+                            onChange={(e) => setNewStudentId(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Student Photo</Label>
+                            <div className="relative w-full aspect-video bg-background rounded-lg shadow-inner overflow-hidden">
+                                  <video ref={addStudentVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                  {!hasCameraPermission && (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 text-muted-foreground">
+                                      <CameraOff className="h-10 w-10 mb-2"/>
+                                      <p>Camera permission not granted.</p>
+                                  </div>
+                                  )}
+                              </div>
+                              <p className="text-xs text-muted-foreground text-center">Position the student's face in the frame.</p>
+                        </div>
+                        <Button type="submit" className="hidden" id="hidden-submit"/>
                     </form>
+                    <DialogFooter className="border-t pt-4">
+                        <DialogClose asChild>
+                          <Button type="button" variant="secondary">Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit" form="add-student-form" onClick={() => document.getElementById('hidden-submit')?.click()}>
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Save Student
+                        </Button>
+                    </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
@@ -582,9 +584,3 @@ export default function AttendancePage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
