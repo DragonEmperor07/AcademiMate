@@ -391,14 +391,14 @@ export default function AttendancePage() {
                             <p className="text-xs text-muted-foreground text-center">Position the student's face in the frame.</p>
                        </div>
                       <DialogFooter>
-                        <DialogClose asChild>
-                          <Button type="button" variant="secondary">Cancel</Button>
-                        </DialogClose>
-                        <Button type="submit">
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Save Student
-                        </Button>
-                      </DialogFooter>
+                         <DialogClose asChild>
+                           <Button type="button" variant="secondary">Cancel</Button>
+                         </DialogClose>
+                         <Button type="submit">
+                           <UserPlus className="mr-2 h-4 w-4" />
+                           Save Student
+                         </Button>
+                       </DialogFooter>
                     </form>
                   </DialogContent>
                 </Dialog>
