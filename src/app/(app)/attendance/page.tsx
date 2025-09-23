@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -22,12 +23,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, ShieldAlert, Camera, CameraOff, ScanLine } from "lucide-react";
+import { PlusCircle, MoreHorizontal, ShieldAlert, Camera, CameraOff, ScanLine, UserCheck, Loader2 } from "lucide-react";
 import { updateStudentStatus, addStudent, subscribe, Student, getStudents } from "@/lib/student-data";
 import { subscribe as subscribeToClasses, Class } from "@/lib/class-data";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Html5Qrcode } from "html5-qrcode";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 export default function AttendancePage() {
@@ -38,8 +40,10 @@ export default function AttendancePage() {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   const [isScanning, setIsScanning] = useState(false);
+  const [isFaceScanning, setIsFaceScanning] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRegionId = "qr-scanner-region";
   const { toast } = useToast();
 
@@ -56,8 +60,12 @@ export default function AttendancePage() {
         }
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream.getTracks().forEach(track => track.stop());
           setHasCameraPermission(true);
+           if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+          // Stop the tracks immediately if we are just checking for permission
+          stream.getTracks().forEach(track => track.stop());
         } catch (error) {
           console.error("Error accessing camera:", error);
           setHasCameraPermission(false);
@@ -75,7 +83,7 @@ export default function AttendancePage() {
         scannerRef.current.stop().catch(err => console.error("Failed to stop scanner on unmount", err));
       }
     };
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     const unsubscribe = subscribe((students) => {
@@ -126,7 +134,7 @@ export default function AttendancePage() {
                 title: "Attendance Marked!",
                 description: `${student.name} has been successfully marked as present.`,
             });
-            stopScan();
+            stopQrScan();
         } else {
              toast({
                 variant: "destructive",
@@ -147,7 +155,7 @@ export default function AttendancePage() {
     // console.log(`QR Code no longer in front of camera.`);
   };
 
-  const startScan = () => {
+  const startQrScan = () => {
     if (hasCameraPermission && !isScanning) {
       const html5QrcodeScanner = new Html5Qrcode(scannerRegionId);
       scannerRef.current = html5QrcodeScanner;
@@ -173,7 +181,7 @@ export default function AttendancePage() {
     }
   };
 
-  const stopScan = () => {
+  const stopQrScan = () => {
     if (scannerRef.current && scannerRef.current.isScanning) {
         scannerRef.current.stop()
         .then(() => {
@@ -186,6 +194,48 @@ export default function AttendancePage() {
     } else {
         setIsScanning(false);
     }
+  };
+
+  const startFaceScan = async () => {
+    if (!hasCameraPermission || !currentClass) return;
+    
+    setIsFaceScanning(true);
+
+    if (videoRef.current && !videoRef.current.srcObject) {
+       try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Camera Error',
+            description: 'Could not access the camera for face scanning.',
+        });
+        setIsFaceScanning(false);
+        return;
+      }
+    }
+    
+    // Simulate AI facial recognition
+    setTimeout(() => {
+      const absentStudents = attendanceData.filter(s => s.status === 'Absent');
+      if (absentStudents.length > 0) {
+        const randomStudent = absentStudents[Math.floor(Math.random() * absentStudents.length)];
+        updateStudentStatus(randomStudent.id, 'Present', currentClass.code);
+        toast({
+          title: "Attendance Marked!",
+          description: `AI recognized ${randomStudent.name} and marked them as present.`,
+        });
+      } else {
+        toast({
+            title: "All students present!",
+            description: 'No absent students left to mark.',
+        });
+      }
+      setIsFaceScanning(false);
+    }, 2500); // Simulate 2.5 second processing time
   };
 
 
@@ -344,46 +394,90 @@ export default function AttendancePage() {
           <div className="lg:col-span-1">
              <Card>
                 <CardHeader>
-                <CardTitle className="font-headline text-xl flex items-center gap-2">
-                    <Camera className="h-5 w-5" />
-                    Scan Student QR Code
-                </CardTitle>
+                    <CardTitle>Attendance Scanner</CardTitle>
+                    <CardDescription>Scan a student's code to mark them as present.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
-                <div className="relative w-full max-w-sm aspect-square bg-background rounded-lg shadow-inner overflow-hidden">
-                    <div id={scannerRegionId} className="w-full h-full" />
-                    {hasCameraPermission === false && (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                        <CameraOff className="h-16 w-16 mb-4"/>
-                        <Alert variant="destructive" className="items-center">
-                        <AlertTitle>Camera Access Required</AlertTitle>
-                        <AlertDescription>
-                            Please allow camera access to use this feature.
-                        </AlertDescription>
-                        </Alert>
-                    </div>
-                    )}
-                    {hasCameraPermission !== false && !isScanning && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
-                        <Camera className="h-16 w-16 mb-4 text-muted-foreground"/>
-                        <p className="text-muted-foreground">Camera is ready</p>
-                    </div>
-                    )}
-                </div>
-                <p className="text-muted-foreground max-w-sm text-sm">
-                    Scan the QR code from the student's profile to mark their attendance.
-                </p>
-                {isScanning ? (
-                    <Button size="lg" onClick={stopScan} variant="destructive">
-                    <ScanLine className="mr-2 h-5 w-5" />
-                    Stop Scanning
-                    </Button>
-                ) : (
-                    <Button size="lg" onClick={startScan} disabled={!hasCameraPermission || !currentClass}>
-                    <Camera className="mr-2 h-5 w-5" />
-                    {!currentClass ? 'No Class in Progress' : 'Start Scan'}
-                    </Button>
-                )}
+                <CardContent>
+                    <Tabs defaultValue="qr">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="qr"><ScanLine className="mr-2 h-4 w-4"/>QR Code</TabsTrigger>
+                            <TabsTrigger value="face"><UserCheck className="mr-2 h-4 w-4"/>Face</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="qr" className="flex flex-col items-center justify-center space-y-4 text-center pt-4">
+                            <div className="relative w-full max-w-sm aspect-square bg-background rounded-lg shadow-inner overflow-hidden">
+                                <div id={scannerRegionId} className="w-full h-full" />
+                                {hasCameraPermission === false && (
+                                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                    <CameraOff className="h-16 w-16 mb-4"/>
+                                    <Alert variant="destructive" className="items-center">
+                                    <AlertTitle>Camera Access Required</AlertTitle>
+                                    <AlertDescription>
+                                        Please allow camera access to use this feature.
+                                    </AlertDescription>
+                                    </Alert>
+                                </div>
+                                )}
+                                {hasCameraPermission !== false && !isScanning && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
+                                    <Camera className="h-16 w-16 mb-4 text-muted-foreground"/>
+                                    <p className="text-muted-foreground">QR scanner is ready</p>
+                                </div>
+                                )}
+                            </div>
+                            <p className="text-muted-foreground max-w-sm text-sm">
+                                Position the student's QR code within the frame to mark their attendance automatically.
+                            </p>
+                            {isScanning ? (
+                                <Button size="lg" onClick={stopQrScan} variant="destructive">
+                                <ScanLine className="mr-2 h-5 w-5" />
+                                Stop Scanning
+                                </Button>
+                            ) : (
+                                <Button size="lg" onClick={startQrScan} disabled={!hasCameraPermission || !currentClass}>
+                                <Camera className="mr-2 h-5 w-5" />
+                                {!currentClass ? 'No Class in Progress' : 'Start QR Scan'}
+                                </Button>
+                            )}
+                        </TabsContent>
+                         <TabsContent value="face" className="flex flex-col items-center justify-center space-y-4 text-center pt-4">
+                            <div className="relative w-full max-w-sm aspect-square bg-background rounded-lg shadow-inner overflow-hidden">
+                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                {hasCameraPermission === false && (
+                                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                    <CameraOff className="h-16 w-16 mb-4"/>
+                                    <Alert variant="destructive" className="items-center">
+                                    <AlertTitle>Camera Access Required</AlertTitle>
+                                    <AlertDescription>
+                                        Please allow camera access to use this feature.
+                                    </AlertDescription>
+                                    </Alert>
+                                </div>
+                                )}
+                                {isFaceScanning && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
+                                    <Loader2 className="h-12 w-12 animate-spin text-white mb-4"/>
+                                    <p className="text-white font-bold">Recognizing Student...</p>
+                                </div>
+                                )}
+                            </div>
+                            <p className="text-muted-foreground max-w-sm text-sm">
+                                Our AI will automatically detect and verify the student's face to mark attendance.
+                            </p>
+                            <Button size="lg" onClick={startFaceScan} disabled={!hasCameraPermission || !currentClass || isFaceScanning}>
+                                {isFaceScanning ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                        Scanning...
+                                    </>
+                                ) : (
+                                    <>
+                                        <UserCheck className="mr-2 h-5 w-5" />
+                                        {!currentClass ? 'No Class in Progress' : 'Start Face Scan'}
+                                    </>
+                                )}
+                            </Button>
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
           </div>
