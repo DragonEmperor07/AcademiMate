@@ -1,5 +1,5 @@
 import { resetAllStudentStatuses } from "./student-data";
-import { db } from './firebase';
+import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export type Class = {
