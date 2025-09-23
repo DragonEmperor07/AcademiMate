@@ -66,7 +66,7 @@ export default function AttendancePage() {
   };
 
   const handleStatusChange = (studentId: string, newStatus: "Present" | "Absent") => {
-    updateStudentStatus(studentId, newStatus);
+    updateStudentStatus(studentId, newStatus, currentClass?.code);
   };
 
   const classQrCodeValue = currentClass ? `${currentClass.code}-2024-FALL` : 'no-class-active';
