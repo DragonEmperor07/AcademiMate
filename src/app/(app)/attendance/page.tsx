@@ -22,15 +22,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal } from "lucide-react";
+import { PlusCircle, MoreHorizontal, ShieldAlert } from "lucide-react";
 import { updateStudentStatus, addStudent, subscribe, Student } from "@/lib/student-data";
 import { subscribe as subscribeToClasses, Class } from "@/lib/class-data";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState<Student[]>([]);
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentId, setNewStudentId] = useState("");
   const [currentClass, setCurrentClass] = useState<Class | undefined>(undefined);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const role = localStorage.getItem("loggedInUserRole");
+    setUserRole(role);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = subscribe((students) => {
@@ -70,12 +77,14 @@ export default function AttendancePage() {
   };
 
   const classQrCodeValue = currentClass ? `${currentClass.code}-2024-FALL` : 'no-class-active';
+  
+  const isStaff = userRole === 'staff';
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Class Attendance"
-        description=""
+        description={isStaff ? "View and manage student attendance for the current class." : "Access restricted to staff."}
       />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
@@ -119,123 +128,133 @@ export default function AttendancePage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Student List</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead>Student ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attendanceData.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">
-                        {student.name}
-                      </TableCell>
-                      <TableCell>{student.id}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            student.status === "Present"
-                              ? "default"
-                              : "destructive"
-                          }
-                          className={
-                            student.status === "Present"
-                              ? "bg-green-500/80 text-white"
-                              : "bg-red-500/80"
-                          }
-                        >
-                          {student.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleStatusChange(student.id, "Present")}
-                              disabled={student.status === 'Present'}
-                            >
-                              Mark as Present
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleStatusChange(student.id, "Absent")}
-                              disabled={student.status === 'Absent'}
-                            >
-                              Mark as Absent
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+      {isStaff ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Student List</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead>Student ID</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Add New Student</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAddStudent} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="student-name">Student Name</Label>
-                  <Input
-                    id="student-name"
-                    placeholder="e.g., John Doe"
-                    value={newStudentName}
-                    onChange={(e) => setNewStudentName(e.target.value)}
-                  />
+                  </TableHeader>
+                  <TableBody>
+                    {attendanceData.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell className="font-medium">
+                          {student.name}
+                        </TableCell>
+                        <TableCell>{student.id}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              student.status === "Present"
+                                ? "default"
+                                : "destructive"
+                            }
+                            className={
+                              student.status === "Present"
+                                ? "bg-green-500/80 text-white"
+                                : "bg-red-500/80"
+                            }
+                          >
+                            {student.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleStatusChange(student.id, "Present")}
+                                disabled={student.status === 'Present'}
+                              >
+                                Mark as Present
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleStatusChange(student.id, "Absent")}
+                                disabled={student.status === 'Absent'}
+                              >
+                                Mark as Absent
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Add New Student</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddStudent} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="student-name">Student Name</Label>
+                    <Input
+                      id="student-name"
+                      placeholder="e.g., John Doe"
+                      value={newStudentName}
+                      onChange={(e) => setNewStudentName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="student-id">Student ID</Label>
+                    <Input
+                      id="student-id"
+                      placeholder="e.g., S011"
+                      value={newStudentId}
+                      onChange={(e) => setNewStudentId(e.target.value)}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Student
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Attendance QR Code</CardTitle>
+                <CardDescription>
+                  Students can scan this code to mark themselves as present.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center p-4">
+                <div className="bg-white p-4 rounded-lg">
+                  <QRCode value={classQrCodeValue} size={200} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="student-id">Student ID</Label>
-                  <Input
-                    id="student-id"
-                    placeholder="e.g., S011"
-                    value={newStudentId}
-                    onChange={(e) => setNewStudentId(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" className="w-full">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add Student
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Attendance QR Code</CardTitle>
-              <CardDescription>
-                Students can scan this code to mark themselves as present.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-center p-4">
-              <div className="bg-white p-4 rounded-lg">
-                <QRCode value={classQrCodeValue} size={200} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      ) : (
+        <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4"/>
+            <AlertTitle>Access Denied</AlertTitle>
+            <AlertDescription>
+                You do not have permission to view this page. This area is for staff members only.
+            </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }
