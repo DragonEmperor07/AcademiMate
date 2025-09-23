@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from 'next/link';
 import { BarChart, Clock, ScanLine, TrendingUp, Camera, CameraOff, Calendar, Users } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "@/hooks/use-toast";
@@ -238,9 +239,11 @@ export default function DashboardPage() {
         </div>
         
         <div className="mt-4">
-          <Button variant="outline" className="w-full justify-between">
-            View Schedule
-            <Calendar className="h-4 w-4" />
+          <Button variant="outline" className="w-full justify-between" asChild>
+            <Link href="/classes">
+              View Schedule
+              <Calendar className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </div>
