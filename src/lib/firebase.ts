@@ -37,38 +37,42 @@ const initialClasses = [
 ];
 
 async function seedInitialData() {
-    const studentsCollection = collection(db, 'students');
-    const classesCollection = collection(db, 'classes');
+    try {
+        const studentsCollection = collection(db, 'students');
+        const classesCollection = collection(db, 'classes');
 
-    // Check if students are already seeded
-    const studentSnapshot = await getDocs(studentsCollection);
-    if (studentSnapshot.empty) {
-        console.log("Seeding initial student data...");
-        const studentBatch = writeBatch(db);
-        initialStudents.forEach(s => {
-            const docRef = doc(studentsCollection, s.id);
-            studentBatch.set(docRef, s);
-        });
-        await studentBatch.commit();
-        console.log("Student data seeded.");
-    }
+        // Check if students are already seeded
+        const studentSnapshot = await getDocs(studentsCollection);
+        if (studentSnapshot.empty) {
+            console.log("Seeding initial student data...");
+            const studentBatch = writeBatch(db);
+            initialStudents.forEach(s => {
+                const docRef = doc(studentsCollection, s.id);
+                studentBatch.set(docRef, s);
+            });
+            await studentBatch.commit();
+            console.log("Student data seeded.");
+        }
 
-    // Check if classes are already seeded
-    const classSnapshot = await getDocs(classesCollection);
-    if (classSnapshot.empty) {
-        console.log("Seeding initial class data...");
-        const classBatch = writeBatch(db);
-        initialClasses.forEach(c => {
-            const docRef = doc(classesCollection, c.code);
-            classBatch.set(docRef, c);
-        });
-        await classBatch.commit();
-        console.log("Class data seeded.");
+        // Check if classes are already seeded
+        const classSnapshot = await getDocs(classesCollection);
+        if (classSnapshot.empty) {
+            console.log("Seeding initial class data...");
+            const classBatch = writeBatch(db);
+            initialClasses.forEach(c => {
+                const docRef = doc(classesCollection, c.code);
+                classBatch.set(docRef, c);
+            });
+            await classBatch.commit();
+            console.log("Class data seeded.");
+        }
+    } catch (error) {
+        console.error("Error seeding data: ", error);
     }
 }
 
 // Seed data on initial load
-seedInitialData().catch(console.error);
+seedInitialData();
 
 
 export { db };
