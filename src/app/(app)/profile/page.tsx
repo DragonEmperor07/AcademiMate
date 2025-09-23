@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getStudentById, Student } from "@/lib/student-data";
+import QRCode from "react-qr-code";
 
 const profileSchema = z.object({
   interests: z.string().min(3, "Please list at least one interest."),
@@ -100,7 +101,7 @@ export default function ProfilePage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-8">
            <Card>
             <CardHeader className="items-center">
               <Avatar className="h-24 w-24 mb-4">
@@ -115,6 +116,19 @@ export default function ProfilePage() {
                 <p><span className="font-semibold">Major:</span> Computer Science</p>
                 <p><span className="font-semibold">Year:</span> 3rd Year</p>
             </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+                <CardTitle>Your Attendance QR Code</CardTitle>
+                <CardDescription>
+                  Present this QR code to your instructor to mark your attendance.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center p-4">
+                <div className="bg-white p-4 rounded-lg">
+                  <QRCode value={student.id} size={200} />
+                </div>
+              </CardContent>
           </Card>
         </div>
 
@@ -182,3 +196,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

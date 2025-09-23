@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import QRCode from "react-qr-code";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -22,10 +22,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PlusCircle, MoreHorizontal, ShieldAlert } from "lucide-react";
-import { updateStudentStatus, addStudent, subscribe, Student } from "@/lib/student-data";
+import { PlusCircle, MoreHorizontal, ShieldAlert, Camera, CameraOff, ScanLine } from "lucide-react";
+import { updateStudentStatus, addStudent, subscribe, Student, getStudents } from "@/lib/student-data";
 import { subscribe as subscribeToClasses, Class } from "@/lib/class-data";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Html5Qrcode } from "html5-qrcode";
+import { useToast } from "@/hooks/use-toast";
+
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState<Student[]>([]);
@@ -34,9 +37,44 @@ export default function AttendancePage() {
   const [currentClass, setCurrentClass] = useState<Class | undefined>(undefined);
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  const [isScanning, setIsScanning] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRegionId = "qr-scanner-region";
+  const { toast } = useToast();
+
   useEffect(() => {
     const role = localStorage.getItem("loggedInUserRole");
     setUserRole(role);
+    
+    if (role === 'staff') {
+      const getCameraPermission = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error("Camera not supported on this browser.");
+            setHasCameraPermission(false);
+            return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream.getTracks().forEach(track => track.stop());
+          setHasCameraPermission(true);
+        } catch (error) {
+          console.error("Error accessing camera:", error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use this app.',
+          });
+        }
+      };
+      getCameraPermission();
+    }
+     return () => {
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop().catch(err => console.error("Failed to stop scanner on unmount", err));
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -75,9 +113,82 @@ export default function AttendancePage() {
   const handleStatusChange = (studentId: string, newStatus: "Present" | "Absent") => {
     updateStudentStatus(studentId, newStatus, currentClass?.code);
   };
-
-  const classQrCodeValue = currentClass ? `${currentClass.code}-2024-FALL` : 'no-class-active';
   
+  const handleScanSuccess = (decodedText: string) => {
+    const studentId = decodedText;
+    const allStudents = getStudents();
+    const student = allStudents.find(s => s.id === studentId);
+    
+    if (student) {
+        if (currentClass) {
+            updateStudentStatus(studentId, "Present", currentClass.code);
+            toast({
+                title: "Attendance Marked!",
+                description: `${student.name} has been successfully marked as present.`,
+            });
+            stopScan();
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Scan Failed",
+                description: "No class is currently in progress to mark attendance for.",
+            });
+        }
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Invalid Student QR Code",
+            description: "The scanned QR code does not correspond to any student.",
+        });
+    }
+  };
+
+  const handleScanError = (errorMessage: string) => {
+    // console.log(`QR Code no longer in front of camera.`);
+  };
+
+  const startScan = () => {
+    if (hasCameraPermission && !isScanning) {
+      const html5QrcodeScanner = new Html5Qrcode(scannerRegionId);
+      scannerRef.current = html5QrcodeScanner;
+      setIsScanning(true);
+      html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        { 
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+        },
+        handleScanSuccess,
+        handleScanError
+      ).catch(err => {
+        console.error("Unable to start scanning.", err);
+        setIsScanning(false);
+        toast({
+            variant: "destructive",
+            title: "Scanner Error",
+            description: "Could not start the QR code scanner.",
+        });
+      });
+    }
+  };
+
+  const stopScan = () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop()
+        .then(() => {
+            setIsScanning(false);
+        })
+        .catch(err => {
+            console.error("Failed to stop the scanner.", err);
+            setIsScanning(false);
+        });
+    } else {
+        setIsScanning(false);
+    }
+  };
+
+
   const isStaff = userRole === 'staff';
 
   return (
@@ -231,18 +342,49 @@ export default function AttendancePage() {
             </Card>
           </div>
           <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendance QR Code</CardTitle>
-                <CardDescription>
-                  Students can scan this code to mark themselves as present.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-center justify-center p-4">
-                <div className="bg-white p-4 rounded-lg">
-                  <QRCode value={classQrCodeValue} size={200} />
+             <Card>
+                <CardHeader>
+                <CardTitle className="font-headline text-xl flex items-center gap-2">
+                    <Camera className="h-5 w-5" />
+                    Scan Student QR Code
+                </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="relative w-full max-w-sm aspect-square bg-background rounded-lg shadow-inner overflow-hidden">
+                    <div id={scannerRegionId} className="w-full h-full" />
+                    {hasCameraPermission === false && (
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                        <CameraOff className="h-16 w-16 mb-4"/>
+                        <Alert variant="destructive" className="items-center">
+                        <AlertTitle>Camera Access Required</AlertTitle>
+                        <AlertDescription>
+                            Please allow camera access to use this feature.
+                        </AlertDescription>
+                        </Alert>
+                    </div>
+                    )}
+                    {hasCameraPermission !== false && !isScanning && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
+                        <Camera className="h-16 w-16 mb-4 text-muted-foreground"/>
+                        <p className="text-muted-foreground">Camera is ready</p>
+                    </div>
+                    )}
                 </div>
-              </CardContent>
+                <p className="text-muted-foreground max-w-sm text-sm">
+                    Scan the QR code from the student's profile to mark their attendance.
+                </p>
+                {isScanning ? (
+                    <Button size="lg" onClick={stopScan} variant="destructive">
+                    <ScanLine className="mr-2 h-5 w-5" />
+                    Stop Scanning
+                    </Button>
+                ) : (
+                    <Button size="lg" onClick={startScan} disabled={!hasCameraPermission || !currentClass}>
+                    <Camera className="mr-2 h-5 w-5" />
+                    {!currentClass ? 'No Class in Progress' : 'Start Scan'}
+                    </Button>
+                )}
+                </CardContent>
             </Card>
           </div>
         </div>
@@ -258,3 +400,5 @@ export default function AttendancePage() {
     </div>
   );
 }
+
+    
